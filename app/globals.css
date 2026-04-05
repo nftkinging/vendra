@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;1,300&family=Space+Mono:wght@400;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f0ede8;
+  --bg2: #e8e4de;
+  --bg3: #ddd9d2;
+  --ink: #0a0a08;
+  --muted: #6b6860;
+  --accent: #e8720c;
+  --accent2: #c45a06;
+  --border: rgba(10, 10, 8, 0.09);
+  --border2: rgba(10, 10, 8, 0.18);
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  font-family: 'Barlow', sans-serif;
+}
