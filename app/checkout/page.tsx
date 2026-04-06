@@ -1,58 +1,63 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Nav from '../Nav';
+import { Suspense } from 'react';
 
-const rows = [
-  { label: 'Product', val: 'Signature Piece', accent: false },
-  { label: 'Type', val: 'Physical', accent: false },
-  { label: 'Network', val: 'Arc Testnet', accent: true },
-  { label: 'Gas fee', val: '~$0.001 USDC', accent: false },
-  { label: 'Total', val: '$45 USDC', accent: true },
-];
-
-const txHash = '0x4a7f9c2e8b1d3f6a0e5c8b2d4f7a1e3c6b9d2f5a8e1c4b7d0f3a6e9c2b5d8f1a';
-
-export default function Checkout() {
+function CheckoutContent() {
+  const searchParams = useSearchParams();
   const [paid, setPaid] = useState(false);
   const [paying, setPaying] = useState(false);
+
+  const store = searchParams.get('store') || 'nour-atelier';
+  const product = searchParams.get('product') || 'Signature Piece';
+  const price = searchParams.get('price') || '45';
+
+  const storeName: Record<string, string> = {
+    'nour-atelier': 'Nour Atelier',
+    'bytedrop': 'ByteDrop',
+    'solar-prints': 'Solar Prints',
+    'kode-studio': 'Kode Studio',
+    'umami-box': 'Umami Box',
+    'soundvault': 'SoundVault',
+  };
 
   const handlePay = () => {
     setPaying(true);
     setTimeout(() => { setPaying(false); setPaid(true); }, 2000);
   };
 
+  const txHash = '0x4a7f9c2e8b1d3f6a0e5c8b2d4f7a1e3c6b9d2f5a8e1c4b7d0f3a6e9c2b5d8f1a';
+
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 2.5rem', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(20px)', background: 'rgba(240,237,232,0.85)' }}>
-        <Link href="/" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.08em' }}>
-          VEND<span style={{ color: 'var(--accent)' }}>R</span>A
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-          <Link href="/" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Explore</Link>
-          <Link href="/create" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Launch Store</Link>
-          <Link href="/dashboard" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dashboard</Link>
-          <button style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', background: 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '0.55rem 1.25rem' }}>Connect Wallet</button>
-        </div>
-      </nav>
-
+      <Nav />
       <div style={{ maxWidth: 460, margin: '0 auto', padding: '7rem 2rem 4rem' }}>
         <div style={{ border: '1px solid var(--border)' }}>
           {!paid ? (
             <>
               <div style={{ padding: '2rem', borderBottom: '1px solid var(--border)', textAlign: 'center', background: 'var(--bg2)' }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Nour Atelier</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em' }}>Signature Piece</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', color: 'var(--accent)', letterSpacing: '0.02em' }}>$45 USDC</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                  {storeName[store] || store}
+                </div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em' }}>{product}</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', color: 'var(--accent)', letterSpacing: '0.02em' }}>${price} USDC</div>
               </div>
               <div style={{ padding: '1.5rem' }}>
-                {rows.map((row, i) => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: i < 4 ? '1px solid var(--border)' : 'none' }}>
-                    <span style={{ color: 'var(--muted)', fontWeight: 300, fontSize: '0.875rem' }}>{row.label}</span>
-                    <span style={{ fontWeight: 500, fontSize: row.label === 'Total' ? '1.2rem' : '0.875rem', color: row.accent ? 'var(--accent)' : 'var(--ink)', fontFamily: row.label === 'Total' ? "'Bebas Neue', sans-serif" : 'inherit' }}>{row.val}</span>
+                {[
+                  ['Product', product, false],
+                  ['Network', 'Arc Testnet', true],
+                  ['Gas fee', '~$0.001 USDC', false],
+                  ['Total', `$${price} USDC`, true],
+                ].map(([label, val, accent], i) => (
+                  <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+                    <span style={{ color: 'var(--muted)', fontWeight: 300, fontSize: '0.875rem' }}>{String(label)}</span>
+                    <span style={{ fontWeight: 500, fontSize: String(label) === 'Total' ? '1.2rem' : '0.875rem', color: accent ? 'var(--accent)' : 'var(--ink)', fontFamily: String(label) === 'Total' ? "'Bebas Neue', sans-serif" : 'inherit' }}>{String(val)}</span>
                   </div>
                 ))}
                 <button onClick={handlePay} disabled={paying} style={{ width: '100%', background: paying ? 'var(--muted)' : 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.15em', cursor: paying ? 'not-allowed' : 'pointer', marginTop: '1.5rem' }}>
-                  {paying ? 'Confirming on Arc...' : 'Pay $45 USDC →'}
+                  {paying ? 'Confirming on Arc...' : `Pay $${price} USDC →`}
                 </button>
                 <div style={{ textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1rem' }}>
                   Arc · Onchain · 0% Fee
@@ -65,9 +70,9 @@ export default function Checkout() {
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Payment Confirmed</div>
               <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 300 }}>Transaction settled on Arc Testnet</div>
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', wordBreak: 'break-all', padding: '0.75rem', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>{txHash}</div>
-              <Link href="/">
+              <Link href={`/store/${store}`}>
                 <button style={{ background: 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                  Back to Explore
+                  Back to Store
                 </button>
               </Link>
             </div>
@@ -75,5 +80,13 @@ export default function Checkout() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Checkout() {
+  return (
+    <Suspense>
+      <CheckoutContent />
+    </Suspense>
   );
 }
