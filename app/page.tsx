@@ -1,39 +1,13 @@
 'use client';
-import Link from 'next/link';
+import Nav from './Nav';
 
 export default function Home() {
   return (
     <main>
-      {/* NAV */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '1.25rem 2.5rem',
-        borderBottom: '1px solid var(--border)',
-        backdropFilter: 'blur(20px)',
-        background: 'rgba(240,237,232,0.85)'
-      }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.08em' }}>
-          VEND<span style={{ color: 'var(--accent)' }}>R</span>A
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-          <Link href="/" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Explore</Link>
-          <Link href="/create" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Launch Store</Link>
-          <Link href="/dashboard" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dashboard</Link>
-          <button style={{
-            fontFamily: "'Space Mono', monospace", fontSize: '0.65rem',
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            background: 'var(--ink)', color: 'var(--bg)',
-            border: 'none', padding: '0.55rem 1.25rem'
-          }}>
-            Connect Wallet
-          </button>
-        </div>
-      </nav>
+      <Nav />
 
       {/* HERO */}
       <section style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '5rem' }}>
-        {/* Corner metadata */}
         <div style={{ position: 'absolute', top: '5.5rem', left: '2.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.6 }}>
           Arc Testnet<br />Commerce Protocol
         </div>
@@ -95,14 +69,16 @@ export default function Home() {
               Launch your store in minutes. Sell anything. Get paid instantly in USDC — no middlemen, no fees, no borders.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <Link href="/create">
-                <button style={{ background: 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              <a href="/create">
+                <button style={{ background: 'var(--ink)', color: 'var(--bg)', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
                   Launch Store →
                 </button>
-              </Link>
-              <button style={{ background: 'transparent', color: 'var(--ink)', border: '1px solid var(--ink)', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Explore
-              </button>
+              </a>
+              <a href="/marketplace">
+                <button style={{ background: 'transparent', color: 'var(--ink)', border: '1px solid var(--ink)', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  Explore
+                </button>
+              </a>
             </div>
           </div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border)', padding: '0.25rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
