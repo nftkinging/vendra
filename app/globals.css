@@ -7,15 +7,16 @@
 }
 
 :root {
-  --bg: #f0ede8;
-  --bg2: #e8e4de;
-  --bg3: #ddd9d2;
-  --ink: #0a0a08;
-  --muted: #6b6860;
-  --accent: #e8720c;
-  --accent2: #c45a06;
-  --border: rgba(10, 10, 8, 0.09);
-  --border2: rgba(10, 10, 8, 0.18);
+  --bg: #0a0612;
+  --bg2: #110d1f;
+  --bg3: #1a1330;
+  --ink: #f0eeff;
+  --muted: #7b6fa8;
+  --accent: #c94d7a;
+  --accent2: #e85d8a;
+  --accent-light: rgba(201, 77, 122, 0.15);
+  --border: rgba(255, 255, 255, 0.08);
+  --border2: rgba(255, 255, 255, 0.15);
 }
 
 body {
@@ -33,4 +34,25 @@ a {
 button {
   cursor: pointer;
   font-family: 'Barlow', sans-serif;
+}
+
+input, textarea, select {
+  color-scheme: dark;
+}
+
+::placeholder {
+  color: var(--muted);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg3);
+  border-radius: 3px;
 }

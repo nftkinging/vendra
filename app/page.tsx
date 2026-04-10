@@ -7,7 +7,7 @@ export default function Home() {
       <Nav />
 
       {/* HERO */}
-      <section style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '5rem' }}>
+      <section style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '5rem', background: 'radial-gradient(ellipse at 70% 40%, rgba(124,58,237,0.2) 0%, transparent 60%), radial-gradient(ellipse at 30% 80%, rgba(201,77,122,0.15) 0%, transparent 50%)' }}>
         <div style={{ position: 'absolute', top: '5.5rem', left: '2.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.6 }}>
           Arc Testnet<br />Commerce Protocol
         </div>
@@ -20,9 +20,9 @@ export default function Home() {
           <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
             <defs>
               <radialGradient id="g1" cx="35%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.9)" />
-                <stop offset="40%" stopColor="rgba(232,114,12,0.15)" />
-                <stop offset="100%" stopColor="rgba(232,114,12,0.05)" />
+                <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+                <stop offset="40%" stopColor="rgba(201,77,122,0.25)" />
+                <stop offset="100%" stopColor="rgba(124,58,237,0.1)" />
               </radialGradient>
               <radialGradient id="g2" cx="70%" cy="65%" r="50%">
                 <stop offset="0%" stopColor="rgba(232,114,12,0.4)" />
