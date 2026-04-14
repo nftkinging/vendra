@@ -1,15 +1,51 @@
 'use client';
 import Nav from './Nav';
 import { useAccount } from 'wagmi';
+import { useEffect, useState } from 'react';
+import { getAllProfiles } from './lib/supabase';
+import { useRouter } from 'next/navigation';
+
+function GetStartedButton({ address }: { address: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const profiles = await getAllProfiles(address);
+      const hasSeller = profiles.some((p: any) => p.role === 'seller');
+      const hasBuyer = profiles.some((p: any) => p.role === 'buyer');
+
+      if (hasSeller && hasBuyer) {
+        router.push('/welcome');
+      } else if (hasSeller && !hasBuyer) {
+        router.push('/onboarding?role=buyer');
+      } else if (hasBuyer && !hasSeller) {
+        router.push('/onboarding?role=seller');
+      } else {
+        router.push('/onboarding');
+      }
+    } catch {
+      router.push('/onboarding');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleClick} disabled={loading} style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
+      {loading ? 'Loading...' : 'Get Started →'}
+    </button>
+  );
+}
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
 
   return (
     <main>
       <Nav />
 
-      {/* HERO */}
       <section style={{
         minHeight: '100vh', position: 'relative', overflow: 'hidden',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -17,7 +53,6 @@ export default function Home() {
         background: 'radial-gradient(ellipse at 70% 40%, rgba(124,58,237,0.2) 0%, transparent 60%), radial-gradient(ellipse at 30% 80%, rgba(201,77,122,0.15) 0%, transparent 50%)'
       }}>
 
-        {/* Corner metadata */}
         <div style={{ position: 'absolute', top: '5.5rem', left: '2.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.6 }}>
           Arc Testnet<br />Commerce Protocol
         </div>
@@ -25,7 +60,6 @@ export default function Home() {
           2025<br />Web3 Commerce
         </div>
 
-        {/* Stars */}
         {[
           { top: '15%', left: '20%', size: 2, opacity: 0.6 },
           { top: '25%', left: '45%', size: 1, opacity: 0.4 },
@@ -40,7 +74,6 @@ export default function Home() {
           <div key={i} style={{ position: 'absolute', top: s.top, left: s.left, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', opacity: s.opacity, pointerEvents: 'none' }} />
         ))}
 
-        {/* Glass orb */}
         <div style={{ position: 'absolute', right: '8%', top: '50%', transform: 'translateY(-50%)', width: 'clamp(200px, 30vw, 380px)', height: 'clamp(200px, 30vw, 380px)', zIndex: 1, pointerEvents: 'none' }}>
           <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
             <defs>
@@ -68,7 +101,6 @@ export default function Home() {
           </svg>
         </div>
 
-        {/* Big type */}
         <div style={{ padding: '0 2.5rem', position: 'relative', zIndex: 2 }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(5rem,13vw,11rem)', lineHeight: 0.92, letterSpacing: '-0.01em' }}>
             <div style={{ color: 'var(--ink)' }}>COMMERCE</div>
@@ -78,7 +110,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats row */}
         <div style={{ display: 'flex', borderTop: '1px solid var(--border)', margin: '2rem 2.5rem 0', position: 'relative', zIndex: 2 }}>
           {[['0%', 'Platform Fees'], ['<2s', 'Settlement'], ['USDC', 'Native Currency'], ['∞', 'Global Reach']].map(([num, label]) => (
             <div key={label} style={{ flex: 1, padding: '1.25rem 0', borderRight: '1px solid var(--border)' }}>
@@ -88,31 +119,26 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Hero bottom */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '2rem 2.5rem', position: 'relative', zIndex: 2, flexWrap: 'wrap', gap: '1.5rem' }}>
           <div style={{ maxWidth: '360px' }}>
             <p style={{ fontSize: '0.95rem', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 300, marginBottom: '1.5rem' }}>
               Launch your store in minutes. Sell anything. Get paid instantly in USDC — no middlemen, no fees, no borders.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {isConnected ? (
-                <a href="/onboarding">
-                  <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                    Get Started →
-                  </button>
-                </a>
-              ) : (
-                <a href="/create">
-                  <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                    Launch Store →
-                  </button>
-                </a>
-              )}
-              <a href="/marketplace">
-                <button style={{ background: 'transparent', color: 'var(--ink)', border: '1px solid var(--border2)', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                  Explore
-                </button>
-              </a>
+              {isConnected && address ? (
+  <GetStartedButton address={address} />
+) : (
+  <a href="/join">
+    <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+      Join Now →
+    </button>
+  </a>
+)}
+<a href="/marketplace">
+  <button style={{ background: 'transparent', color: 'var(--ink)', border: '1px solid var(--border2)', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+    Explore
+  </button>
+</a>
             </div>
           </div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border)', padding: '0.25rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>

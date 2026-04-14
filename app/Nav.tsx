@@ -1,8 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
 
 export default function Nav() {
+  const { isConnected } = useAccount();
+
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
@@ -16,9 +19,14 @@ export default function Nav() {
         VEND<span style={{ color: 'var(--accent)' }}>R</span>A
       </Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-        <Link href="/marketplace" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>Explore</Link>
-        <Link href="/create" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>Launch Store</Link>
-        <Link href="/dashboard" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>Dashboard</Link>
+        <Link href="/marketplace" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
+          Explore
+        </Link>
+        {isConnected && (
+          <Link href="/profile" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
+            My Profile
+          </Link>
+        )}
         <ConnectButton
           label="Connect Wallet"
           accountStatus="address"
