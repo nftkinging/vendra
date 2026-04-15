@@ -171,9 +171,9 @@ export default function Profile() {
                     <Link href={`/store/${store.slug}`}>
                       <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>View Storefront →</button>
                     </Link>
-                    <Link href="/store/create">
-                      <button style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Edit Store</button>
-                    </Link>
+                    <Link href="/store/edit">
+  <button style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Edit Store</button>
+</Link>
                     <button onClick={() => setShowDeleteConfirm(true)} style={{ background: 'transparent', color: '#e84040', border: '1px solid rgba(232,64,64,0.3)', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Delete Store</button>
                   </div>
                 </div>
