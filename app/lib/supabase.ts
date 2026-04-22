@@ -46,7 +46,7 @@ export async function getStoreByWallet(walletAddress: string) {
 
 export async function saveStore(store: {
   owner_wallet: string; name: string; tagline: string; description: string;
-  category: string; slug: string; x_handle?: string; deploy_fee_tx?: string;
+  category: string; slug: string; x_handle?: string; deploy_fee_tx?: string; banner_url?: string;
 }) {
   const { data, error } = await supabase.from('stores').upsert(store, { onConflict: 'slug' }).select().single();
   if (error) throw error;
@@ -54,7 +54,7 @@ export async function saveStore(store: {
 }
 
 export async function updateStore(storeId: string, updates: {
-  name?: string; tagline?: string; description?: string; category?: string; x_handle?: string;
+  name?: string; tagline?: string; description?: string; category?: string; x_handle?: string; banner_url?: string;
 }) {
   const { data, error } = await supabase.from('stores').update(updates).eq('id', storeId).select().single();
   if (error) throw error;
@@ -67,7 +67,7 @@ export async function deleteStore(storeId: string) {
 }
 
 export async function saveProduct(product: {
-  store_id: string; name: string; description: string; price: number; type: string;
+  store_id: string; name: string; description: string; price: number; type: string; image_url?: string;
 }) {
   const { data, error } = await supabase.from('products').insert(product).select().single();
   if (error) throw error;
@@ -112,5 +112,14 @@ export async function uploadAvatar(walletAddress: string, file: File) {
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function uploadImage(path: string, file: File) {
+  const ext = file.name.split('.').pop();
+  const fullPath = `${path}.${ext}`;
+  const { error } = await supabase.storage.from('avatars').upload(fullPath, file, { upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from('avatars').getPublicUrl(fullPath);
   return data.publicUrl;
 }

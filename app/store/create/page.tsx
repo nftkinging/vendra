@@ -1,9 +1,9 @@
 'use client';
 import Nav from '../../Nav';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
-import { saveStore, getStoreByWallet } from '../../lib/supabase';
+import { saveStore, getStoreByWallet, uploadImage } from '../../lib/supabase';
 import { useSendTransaction } from 'wagmi';
 import { parseUnits } from 'viem';
 
@@ -21,8 +21,12 @@ export default function CreateStore() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
   const { sendTransactionAsync } = useSendTransaction();
+  const bannerRef = useRef<HTMLInputElement>(null);
+
   const [selectedCat, setSelectedCat] = useState('Fashion');
   const [form, setForm] = useState({ name: '', tagline: '', description: '', xHandle: '' });
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'paying' | 'success'>('form');
   const [error, setError] = useState('');
@@ -30,7 +34,16 @@ export default function CreateStore() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [copied, setCopied] = useState('');
 
-  const tweetText = `I just deployed my store "${form.name}" on Arc Testnet! 🛍️\n\nVisit now and start shopping on Vendra — the decentralized marketplace built on Arc.\n\n👉 https://vendra-app-omega.vercel.app/store/${form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${address?.slice(2, 6)}\n\n#ArcTestnet #Web3 #Vendra`;
+  const storeSlug = `${form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${address?.slice(2, 6)}`;
+  const storeUrl = `https://vendra-app-omega.vercel.app/store/${storeSlug}`;
+  const tweetText = `I just deployed my store "${form.name}" on Arc Testnet! 🛍️\n\nVisit now and start shopping on Vendra — the decentralized marketplace built on Arc.\n\n👉 ${storeUrl}\n\n#ArcTestnet #Web3 #Vendra`;
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
+  };
 
   const handleCopyTweet = () => {
     navigator.clipboard.writeText(tweetText);
@@ -55,27 +68,29 @@ export default function CreateStore() {
       const existing = await getStoreByWallet(address);
       if (existing) { setError('You already have a store. Delete it first to create a new one.'); setLoading(false); return; }
       setStep('paying');
-      const hash = await sendTransactionAsync({
-        to: FEE_WALLET,
-        value: parseUnits(DEPLOY_FEE.toString(), 18),
-      });
-      const slug = `${form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${address.slice(2, 6)}`;
+      const hash = await sendTransactionAsync({ to: FEE_WALLET, value: parseUnits(DEPLOY_FEE.toString(), 18) });
+
+      let bannerUrl = '';
+      if (bannerFile) {
+        bannerUrl = await uploadImage(`banners/${address}`, bannerFile);
+      }
+
       const store = await saveStore({
         owner_wallet: address,
         name: form.name,
         tagline: form.tagline,
         description: form.description,
         category: selectedCat,
-        slug,
+        slug: storeSlug,
         x_handle: form.xHandle,
         deploy_fee_tx: hash,
+        banner_url: bannerUrl,
       });
       setDeployedStore(store);
       setStep('success');
     } catch (e: any) {
       setStep('form');
       setError(e?.message?.includes('rejected') ? 'Transaction rejected.' : 'Something went wrong. Please try again.');
-      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -85,7 +100,7 @@ export default function CreateStore() {
     <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Nav />
 
-      {/* Share card modal */}
+      {/* Share modal */}
       {showShareCard && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,6,18,0.85)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', maxWidth: 480, width: '100%' }}>
@@ -94,12 +109,11 @@ export default function CreateStore() {
               <button onClick={() => setShowShareCard(false)} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
             </div>
             <div style={{ padding: '1.5rem' }}>
-              {/* Tweet preview */}
               <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1.25rem', marginBottom: '1.5rem', fontFamily: "'Barlow', sans-serif", fontSize: '0.9rem', lineHeight: 1.7, color: 'var(--ink)', whiteSpace: 'pre-wrap' }}>
                 {tweetText}
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button onClick={handleCopyTweet} style={{ flex: 1, background: copied === 'tweet' ? 'rgba(80,200,80,0.2)' : 'var(--bg3)', color: copied === 'tweet' ? '#50c850' : 'var(--ink)', border: '1px solid var(--border)', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={handleCopyTweet} style={{ flex: 1, background: copied === 'tweet' ? 'rgba(80,200,80,0.15)' : 'var(--bg3)', color: copied === 'tweet' ? '#50c850' : 'var(--ink)', border: '1px solid var(--border)', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
                   {copied === 'tweet' ? '✓ Copied!' : 'Copy Tweet'}
                 </button>
                 <button onClick={handleShareX} style={{ flex: 1, background: '#000', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
@@ -113,6 +127,7 @@ export default function CreateStore() {
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '7rem 2.5rem 4rem' }}>
 
+        {/* PAYING STEP */}
         {step === 'paying' && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', marginBottom: '1rem' }}>Deploying Store...</div>
@@ -122,6 +137,7 @@ export default function CreateStore() {
           </div>
         )}
 
+        {/* SUCCESS STEP */}
         {step === 'success' && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '5rem', color: 'var(--accent)', lineHeight: 1 }}>✓</div>
@@ -136,6 +152,9 @@ export default function CreateStore() {
               <button onClick={() => router.push(`/store/${deployedStore?.slug}`)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.85rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 View My Store →
               </button>
+              <button onClick={() => router.push('/store/edit')} style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.85rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                Add Products →
+              </button>
               <button onClick={() => router.push('/profile')} style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.85rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 Go to Profile
               </button>
@@ -143,6 +162,7 @@ export default function CreateStore() {
           </div>
         )}
 
+        {/* FORM STEP */}
         {step === 'form' && (
           <>
             <div style={{ marginBottom: '0.75rem' }}>
@@ -150,16 +170,37 @@ export default function CreateStore() {
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)' }} /> Arc Testnet
               </div>
             </div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3.5rem', letterSpacing: '0.02em', lineHeight: 0.95, marginBottom: '0.5rem' }}>
-              LAUNCH<br />YOUR STORE
-            </div>
-            <p style={{ color: 'var(--muted)', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 300 }}>
-              Set up in 2 minutes. Start selling globally, instantly.
-            </p>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3.5rem', letterSpacing: '0.02em', lineHeight: 0.95, marginBottom: '0.5rem' }}>LAUNCH<br />YOUR STORE</div>
+            <p style={{ color: 'var(--muted)', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 300 }}>Set up in 2 minutes. Start selling globally, instantly.</p>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(201,77,122,0.08)', border: '1px solid rgba(201,77,122,0.2)', padding: '0.5rem 0.75rem', marginBottom: '2.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--accent)', letterSpacing: '0.06em' }}>
               ⚡ Deployment fee: ${DEPLOY_FEE} USDC · paid on Arc Testnet
             </div>
 
+            {/* Store Banner Upload */}
+            <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
+              <div style={blockHeadStyle}>Store Banner</div>
+              <div style={{ padding: '1.25rem' }}>
+                <input ref={bannerRef} type="file" accept="image/*" onChange={handleBannerChange} style={{ display: 'none' }} />
+                {bannerPreview ? (
+                  <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                    <img src={bannerPreview} alt="banner preview" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+                    <button onClick={() => bannerRef.current?.click()} style={{ position: 'absolute', bottom: '0.75rem', right: '0.75rem', background: 'rgba(10,6,18,0.8)', color: 'var(--ink)', border: '1px solid var(--border)', padding: '0.4rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div onClick={() => bannerRef.current?.click()} style={{ height: 160, border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '0.5rem', transition: 'border-color 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                    <div style={{ fontSize: '2rem' }}>🖼️</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Click to upload banner image</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--muted)', opacity: 0.6 }}>Recommended: 1200×400px</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Store Identity */}
             <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
               <div style={blockHeadStyle}>Store Identity</div>
               <div style={{ padding: '1.25rem' }}>
@@ -182,6 +223,7 @@ export default function CreateStore() {
               </div>
             </div>
 
+            {/* Category */}
             <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
               <div style={blockHeadStyle}>Category</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
@@ -194,6 +236,7 @@ export default function CreateStore() {
               </div>
             </div>
 
+            {/* Payment wallet */}
             <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
               <div style={blockHeadStyle}>Payment Wallet</div>
               <div style={{ padding: '1.25rem' }}>
