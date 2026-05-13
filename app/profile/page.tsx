@@ -9,11 +9,11 @@ import { useRouter } from 'next/navigation';
 export default function Profile() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
-  const [sellerProfile, setSellerProfile] = useState(null);
-  const [buyerProfile, setBuyerProfile] = useState(null);
-  const [store, setStore] = useState(null);
-  const [buyerOrders, setBuyerOrders] = useState([]);
-  const [sellerOrders, setSellerOrders] = useState([]);
+  const [sellerProfile, setSellerProfile] = useState<any>(null);
+  const [buyerProfile, setBuyerProfile] = useState<any>(null);
+  const [store, setStore] = useState<any>(null);
+  const [buyerOrders, setBuyerOrders] = useState<any[]>([]);
+  const [sellerOrders, setSellerOrders] = useState<any[]>([]);
   const [view, setView] = useState('seller');
   const [loading, setLoading] = useState(true);
   const [deletingStore, setDeletingStore] = useState(false);
