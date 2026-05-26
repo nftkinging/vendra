@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vendra — Commerce Unchained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+img{display:block;max-width:100%;}
+button{cursor:pointer;font-family:'DM Sans',sans-serif;border:none;background:none;}
+a{text-decoration:none;color:inherit;}
+
+/* ── TOKENS ── */
+:root{
+  --bg:#0C0E1A;
+  --bg2:#101320;
+  --bg3:#13162A;
+  --s1:rgba(255,255,255,0.05);
+  --s2:rgba(255,255,255,0.08);
+  --s3:rgba(255,255,255,0.10);
+  --b1:rgba(255,255,255,0.09);
+  --b2:rgba(255,255,255,0.14);
+  --b3:rgba(255,255,255,0.22);
+  --w:rgba(255,248,235,1.00);
+  --w85:rgba(255,248,235,0.92);
+  --w60:rgba(255,248,235,0.75);
+  --w35:rgba(255,248,235,0.55);
+  --w18:rgba(255,248,235,0.42);
+  --w08:rgba(255,248,235,0.35);
+  --a:#D4B05A;
+  --a2:#EAC96E;
+  --a3:#F8E090;
+  --a4:rgba(212,176,90,0.20);
+  --a5:rgba(212,176,90,0.12);
+  --a6:rgba(212,176,90,0.08);
+  --sl:#9BB5C8;
+  --sl2:#B8D0DF;
+  --sl3:rgba(155,181,200,0.10);
+  --gr:#8FC498;
+  --gr2:rgba(143,196,152,0.14);
+  --gr3:rgba(143,196,152,0.25);
+  --ease:cubic-bezier(0.22,1,0.36,1);
+  --sec-pad-v:112px;
+  --sec-pad-h:56px;
+  --max-width:1200px;
+}
+
+/* ── BASE ── */
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--w85);
+  overflow-x:hidden;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  opacity:0.025;
+  pointer-events:none;
+  z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+
+/* ════════════════════════════════════════════
+   NAV
+════════════════════════════════════════════ */
+.nav{
+  position:fixed;top:0;left:0;right:0;
+  height:72px;
+  padding:0 var(--sec-pad-h);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(12,14,26,0.78);
+  backdrop-filter:blur(32px) saturate(160%);
+  border-bottom:1px solid var(--b1);
+  z-index:100;
+}
+.nav-logo{display:flex;align-items:center;gap:13px;cursor:pointer;}
+.logo-emblem{
+  position:relative;
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.logo-emblem::before{
+  content:'';
+  position:absolute;inset:0;
+  border:1px solid rgba(201,168,76,0.38);
+  transform:rotate(45deg);
+  transition:border-color 0.35s var(--ease);
+}
+.logo-emblem::after{
+  content:'';
+  position:absolute;inset:6px;
+  border:1px solid rgba(201,168,76,0.16);
+  transform:rotate(45deg);
+}
+.nav-logo:hover .logo-emblem::before{border-color:rgba(201,168,76,0.7);}
+.logo-v{
+  font-family:'Cormorant',serif;
+  font-size:16px;font-weight:400;font-style:italic;
+  color:var(--a2);
+  position:relative;z-index:1;
+}
+.logo-name{
+  font-family:'Cormorant',serif;
+  font-size:20px;font-weight:300;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--w85);
+}
+.nav-links{display:flex;align-items:center;gap:36px;}
+.nav-links a{
+  font-size:11px;font-weight:400;
+  letter-spacing:0.10em;text-transform:uppercase;
+  color:var(--w35);
+  transition:color 0.3s var(--ease);
+}
+.nav-links a:hover{color:var(--w85);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.btn-faucet{
+  font-size:10px;font-weight:400;font-style:italic;
+  letter-spacing:0.10em;text-transform:uppercase;
+  color:var(--sl);
+  border:1px solid rgba(155,181,200,0.25);
+  padding:9px 18px;border-radius:2px;
+  transition:all 0.35s var(--ease);
+}
+.btn-faucet:hover{color:var(--sl2);border-color:rgba(155,181,200,0.45);}
+.btn-nav-ghost{
+  font-size:11px;font-weight:400;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--w35);
+  border:1px solid var(--b2);
+  padding:10px 24px;border-radius:2px;
+  transition:all 0.35s var(--ease);
+}
+.btn-nav-ghost:hover{color:var(--w85);border-color:var(--b3);}
+.btn-nav-amber{
+  font-size:11px;font-weight:500;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--bg);
+  background:var(--a2);
+  border:none;
+  padding:10px 24px;border-radius:2px;
+  box-shadow:0 1px 0 0 var(--a3),0 4px 20px rgba(201,168,76,0.18);
+  transition:all 0.35s var(--ease);
+}
+.btn-nav-amber:hover{
+  background:var(--a3);
+  transform:translateY(-1px);
+  box-shadow:0 1px 0 0 var(--a3),0 8px 28px rgba(201,168,76,0.28);
+}
+
+/* ════════════════════════════════════════════
+   HERO
+════════════════════════════════════════════ */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:120px var(--sec-pad-h) 80px;
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+}
+
+/* Atmosphere */
+.atm{position:absolute;inset:0;pointer-events:none;z-index:0;}
+.orb-a{
+  position:absolute;
+  top:-10%;left:50%;
+  transform:translateX(-50%);
+  width:900px;height:700px;
+  background:radial-gradient(ellipse at center,
+    rgba(212,176,90,0.10) 0%,
+    rgba(212,176,90,0.04) 40%,
+    transparent 70%);
+}
+.orb-sl-l{
+  position:absolute;
+  top:20%;left:-10%;
+  width:500px;height:500px;
+  background:radial-gradient(circle,
+    rgba(139,165,184,0.08) 0%,transparent 65%);
+}
+.orb-sl-r{
+  position:absolute;
+  top:30%;right:-8%;
+  width:420px;height:420px;
+  background:radial-gradient(circle,
+    rgba(139,165,184,0.06) 0%,transparent 65%);
+}
+.grid-overlay{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,0.018) 1px,transparent 1px);
+  background-size:96px 96px;
+}
+.hairline{
+  position:absolute;
+  top:50%;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,
+    transparent,
+    rgba(201,168,76,0.06) 20%,
+    rgba(201,168,76,0.06) 80%,
+    transparent);
+}
+
+/* Hero Content */
+.hero-inner{position:relative;z-index:1;width:100%;max-width:1000px;}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:16px;
+  margin-bottom:40px;
+}
+.eyebrow-line{width:48px;height:1px;background:rgba(201,168,76,0.4);}
+.eyebrow-text{
+  font-family:'DM Sans',sans-serif;
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.22em;text-transform:uppercase;
+  color:var(--a);
+}
+.hero-h1{
+  font-family:'Cormorant',serif;
+  font-size:clamp(52px,9vw,118px);
+  font-weight:300;
+  line-height:0.90;
+  letter-spacing:-0.01em;
+  margin-bottom:32px;
+}
+.h1-line1{display:block;color:var(--w);}
+.h1-line2{
+  display:block;
+  font-style:italic;
+  background:linear-gradient(120deg,var(--a) 0%,var(--a2) 50%,var(--a3) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.h1-line3{
+  display:block;
+  color:rgba(255,248,235,0.07);
+}
+.hero-sub{
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;font-weight:300;font-style:italic;
+  color:var(--w35);
+  line-height:1.8;
+  max-width:480px;
+  margin:0 auto 48px;
+}
+.hero-actions{
+  display:flex;align-items:center;justify-content:center;
+  gap:16px;margin-bottom:72px;
+}
+.btn-primary{
+  font-family:'DM Sans',sans-serif;
+  font-size:11px;font-weight:500;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--bg);
+  background:var(--a2);
+  border:none;
+  padding:18px 44px;border-radius:2px;
+  box-shadow:0 1px 0 0 var(--a3),0 6px 28px rgba(201,168,76,0.20);
+  transition:all 0.35s var(--ease);
+}
+.btn-primary:hover{
+  background:var(--a3);
+  transform:translateY(-2px);
+  box-shadow:0 1px 0 0 var(--a3),0 14px 40px rgba(201,168,76,0.30);
+}
+.btn-ghost{
+  font-family:'DM Sans',sans-serif;
+  font-size:11px;font-weight:400;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--w35);
+  background:transparent;
+  border:1px solid var(--b2);
+  padding:18px 44px;border-radius:2px;
+  transition:all 0.35s var(--ease);
+}
+.btn-ghost:hover{color:var(--w85);border-color:var(--b3);}
+
+/* Stats Bar */
+.stats-bar{
+  display:inline-flex;
+  border:1px solid var(--b1);
+  overflow:hidden;
+}
+.stat{
+  padding:20px 40px;
+  border-right:1px solid var(--b1);
+  text-align:center;
+}
+.stat:last-child{border-right:none;}
+.stat-val{
+  font-family:'Cormorant',serif;
+  font-size:30px;font-weight:300;
+  color:var(--w);
+  line-height:1;
+  margin-bottom:6px;
+}
+.stat-val.amber{color:var(--a2);}
+.stat-label{
+  font-family:'DM Sans',sans-serif;
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--w18);
+}
+
+/* Showcase Card */
+.showcase-wrap{
+  position:relative;
+  max-width:680px;
+  margin:64px auto 0;
+}
+.showcase-card{
+  background:linear-gradient(145deg,
+    rgba(255,255,255,0.07) 0%,
+    rgba(255,255,255,0.025) 100%);
+  border:1px solid var(--b2);
+  border-radius:8px;
+  backdrop-filter:blur(60px);
+  padding:28px;
+  position:relative;overflow:hidden;
+  text-align:left;
+}
+.showcase-card::before{
+  content:'';
+  position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,
+    transparent,rgba(201,168,76,0.5),rgba(184,205,216,0.3),transparent);
+}
+.showcase-card::after{
+  content:'';
+  position:absolute;bottom:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,
+    transparent,rgba(201,168,76,0.15),transparent);
+}
+.sc-top{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:20px;
+}
+.sc-label{
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--w18);margin-bottom:4px;
+}
+.sc-bal{
+  font-family:'Cormorant',serif;
+  font-size:36px;font-weight:300;
+  color:var(--a2);
+  line-height:1;
+}
+.sc-network{
+  font-size:10px;font-weight:300;font-style:italic;
+  color:var(--w18);margin-top:4px;
+  letter-spacing:0.08em;
+}
+.sc-badge{
+  font-size:9px;font-weight:400;font-style:italic;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--gr);
+  border:1px solid var(--gr3);
+  background:var(--gr2);
+  padding:5px 12px;border-radius:2px;
+}
+.sc-divider{height:1px;background:var(--b1);margin:16px 0;}
+.sc-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.sc-row:last-child{border-bottom:none;}
+.sc-row-l{display:flex;align-items:center;gap:12px;}
+.sc-dot{
+  width:32px;height:32px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.sc-dot-a{background:var(--a5);border:1px solid rgba(201,168,76,0.2);}
+.sc-dot-s{background:var(--sl3);border:1px solid rgba(155,181,200,0.15);}
+.sc-tx-name{font-size:12px;font-weight:400;color:var(--w60);}
+.sc-tx-sub{font-size:10px;font-weight:300;font-style:italic;color:var(--w18);margin-top:2px;}
+.sc-amount{
+  font-family:'Cormorant',serif;
+  font-size:16px;font-weight:300;
+  color:var(--gr);
+}
+
+/* ════════════════════════════════════════════
+   TRUST BAR / TICKER
+════════════════════════════════════════════ */
+.ticker-wrap{
+  border-top:1px solid var(--b1);
+  border-bottom:1px solid var(--b1);
+  overflow:hidden;
+  padding:16px 0;
+  background:var(--bg2);
+  position:relative;
+}
+.ticker-wrap::before,.ticker-wrap::after{
+  content:'';
+  position:absolute;top:0;bottom:0;width:120px;z-index:2;
+}
+.ticker-wrap::before{left:0;background:linear-gradient(90deg,var(--bg2),transparent);}
+.ticker-wrap::after{right:0;background:linear-gradient(270deg,var(--bg2),transparent);}
+.ticker-track{
+  display:flex;align-items:center;gap:0;
+  animation:ticker 40s linear infinite;
+  width:max-content;
+}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker-item{
+  display:flex;align-items:center;gap:24px;
+  padding:0 48px;
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--w18);
+  white-space:nowrap;
+}
+.ticker-item span{color:var(--a);opacity:0.7;}
+.ticker-dot{width:3px;height:3px;border-radius:50%;background:var(--a4);}
+
+/* ════════════════════════════════════════════
+   IMAGE STRIP
+════════════════════════════════════════════ */
+.strip-section{position:relative;overflow:hidden;}
+.strip-ghost{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:2;
+}
+.strip-ghost-text{
+  font-family:'Cormorant',serif;
+  font-weight:300;font-style:italic;
+  font-size:clamp(80px,16vw,240px);
+  color:rgba(201,168,76,0.035);
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.strip-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:0;
+}
+.strip-col{
+  position:relative;
+  height:420px;
+  overflow:hidden;
+  cursor:pointer;
+}
+.strip-col-bg{
+  width:100%;height:100%;
+  transition:transform 0.55s var(--ease);
+  filter:brightness(0.42) saturate(0.7);
+}
+.strip-col:hover .strip-col-bg{
+  transform:scale(1.05);
+  filter:brightness(0.62) saturate(0.85);
+}
+/* Colored gradient fills for strip columns */
+.sc1{background:linear-gradient(145deg,#1a1508 0%,#2a1f0d 30%,#3d2e14 60%,#1a1508 100%);}
+.sc2{background:linear-gradient(145deg,#080f1a 0%,#0d1828 30%,#142035 60%,#080f1a 100%);}
+.sc3{background:linear-gradient(145deg,#0f0810 0%,#1a0f20 30%,#261630 60%,#0f0810 100%);}
+.sc4{background:linear-gradient(145deg,#050d08 0%,#0a1810 30%,#122018 60%,#050d08 100%);}
+.strip-col-inner{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  justify-content:flex-end;
+  padding:24px;
+}
+.strip-col-cat{
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.20em;text-transform:uppercase;
+  color:rgba(212,176,90,0.7);
+  margin-bottom:6px;
+}
+.strip-col-name{
+  font-family:'Cormorant',serif;
+  font-size:18px;font-weight:300;font-style:italic;
+  color:var(--w60);
+  margin-bottom:4px;
+}
+.strip-col-price{
+  font-family:'Cormorant',serif;
+  font-size:14px;font-weight:300;
+  color:var(--a);
+}
+/* Decorative SVG shapes inside columns */
+.strip-shape{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-60%);
+  opacity:0.6;
+  transition:opacity 0.45s var(--ease);
+}
+.strip-col:hover .strip-shape{opacity:0.9;}
+
+/* ════════════════════════════════════════════
+   PRODUCT GRID
+════════════════════════════════════════════ */
+.section{
+  padding:var(--sec-pad-v) var(--sec-pad-h);
+  max-width:var(--max-width);
+  margin:0 auto;
+}
+.section-eyebrow{
+  display:flex;align-items:center;gap:16px;
+  margin-bottom:20px;
+}
+.eyebrow-rule{width:32px;height:1px;background:var(--a4);}
+.eyebrow-label{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.20em;text-transform:uppercase;
+  color:var(--a);
+}
+.section-head{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  margin-bottom:48px;
+}
+.section-title{
+  font-family:'Cormorant',serif;
+  font-size:clamp(36px,5vw,62px);
+  font-weight:300;
+  letter-spacing:-0.01em;
+  line-height:0.94;
+  color:var(--w);
+}
+.section-title em{
+  font-style:italic;
+  background:linear-gradient(120deg,var(--a),var(--a2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.view-all{
+  font-size:11px;font-weight:400;font-style:italic;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--a);
+  display:flex;align-items:center;gap:8px;
+  transition:gap 0.3s var(--ease);
+}
+.view-all:hover{gap:14px;}
+
+.product-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--b1);
+}
+.pcard{
+  background:var(--bg);
+  position:relative;overflow:hidden;
+  cursor:pointer;
+  transition:transform 0.45s var(--ease);
+}
+.pcard:hover{transform:translateY(-8px);z-index:2;}
+.pcard-img{
+  aspect-ratio:3/4;
+  position:relative;overflow:hidden;
+}
+.pcard-img-fill{
+  width:100%;height:100%;
+  transition:transform 0.55s var(--ease);
+}
+.pcard:hover .pcard-img-fill{transform:scale(1.05);}
+.pcard-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,
+    rgba(12,14,26,0.97) 0%,
+    rgba(12,14,26,0.10) 50%);
+}
+.pcard-hover-glow{
+  position:absolute;inset:0;
+  opacity:0;
+  transition:opacity 0.45s var(--ease);
+}
+.pcard:hover .pcard-hover-glow{opacity:1;}
+.phg-a{background:linear-gradient(to top,rgba(212,176,90,0.07),transparent 55%);}
+.phg-s{background:linear-gradient(to top,rgba(155,181,200,0.05),transparent 55%);}
+.pcard-cat{
+  position:absolute;top:16px;left:16px;
+  font-size:8px;font-weight:400;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--w35);
+  border:1px solid var(--b1);
+  padding:4px 10px;
+  background:rgba(12,14,26,0.6);
+  backdrop-filter:blur(8px);
+}
+.pcard-verified{
+  position:absolute;top:16px;right:16px;
+  font-size:8px;font-weight:400;font-style:italic;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--gr);
+  border:1px solid var(--gr3);
+  padding:4px 10px;
+  background:var(--gr2);
+  backdrop-filter:blur(8px);
+}
+.pcard-body{padding:20px;}
+.pcard-name{
+  font-family:'Cormorant',serif;
+  font-size:18px;font-weight:400;
+  color:var(--w85);
+  line-height:1.2;
+  margin-bottom:8px;
+}
+.pcard-seller{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.10em;
+  color:var(--w18);
+  margin-bottom:14px;
+}
+.pcard-foot{display:flex;justify-content:space-between;align-items:center;}
+.pcard-price{
+  font-family:'Cormorant',serif;
+  font-size:24px;font-weight:300;
+  color:var(--w85);
+  letter-spacing:0.01em;
+}
+.pcard-buy{
+  font-size:9px;font-weight:400;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--w35);
+  border:1px solid var(--b1);
+  padding:7px 16px;border-radius:2px;
+  transition:all 0.35s var(--ease);
+}
+.pcard-buy:hover{color:var(--a);border-color:rgba(201,168,76,0.5);}
+
+/* ════════════════════════════════════════════
+   BENTO FEATURES
+════════════════════════════════════════════ */
+.bento-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1px;
+  background:var(--b1);
+}
+.bcard{
+  background:var(--bg3);
+  padding:48px;
+  position:relative;overflow:hidden;
+}
+.bcard::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--b2),transparent);
+}
+.bcard-wide{grid-column:1/-1;}
+.bcard-num{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.20em;
+  color:var(--a);
+  margin-bottom:20px;
+}
+.bcard-title{
+  font-family:'Cormorant',serif;
+  font-size:26px;font-weight:400;
+  letter-spacing:0.01em;
+  line-height:1.15;
+  color:var(--w85);
+  margin-bottom:14px;
+}
+.bcard-body{
+  font-size:14px;font-weight:300;font-style:italic;
+  color:var(--w35);
+  line-height:1.8;
+  max-width:400px;
+}
+.bcard-stat{
+  font-family:'Cormorant',serif;
+  font-size:clamp(48px,6vw,80px);
+  font-weight:300;
+  color:var(--a2);
+  margin-top:24px;
+  line-height:1;
+}
+.bcard-stat-label{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--w18);
+  margin-top:8px;
+}
+
+/* Fee comparison bars */
+.fee-bars{margin-top:32px;}
+.fee-row{
+  display:flex;align-items:center;gap:16px;
+  margin-bottom:16px;
+}
+.fee-label{
+  font-size:11px;font-weight:400;font-style:italic;
+  color:var(--w35);
+  width:100px;flex-shrink:0;
+  letter-spacing:0.06em;
+}
+.fee-bar-wrap{flex:1;height:1px;background:var(--b1);position:relative;}
+.fee-bar-fill{
+  height:1px;
+  position:absolute;top:0;left:0;
+}
+.fee-bar-fill.amber{background:var(--a2);}
+.fee-bar-fill.slate{background:var(--sl);}
+.fee-bar-fill.dim{background:var(--w18);}
+.fee-pct{
+  font-family:'Cormorant',serif;
+  font-size:14px;font-weight:300;
+  color:var(--w35);
+  width:48px;text-align:right;
+  flex-shrink:0;
+}
+.fee-pct.amber{color:var(--a2);}
+
+/* ════════════════════════════════════════════
+   EDITORIAL FRAUD BLOCK
+════════════════════════════════════════════ */
+.editorial{
+  position:relative;
+  overflow:hidden;
+  padding:var(--sec-pad-v) var(--sec-pad-h);
+  background:var(--bg2);
+}
+.editorial-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,
+    #0a0c16 0%,#111825 40%,#141020 70%,#0a0c16 100%);
+}
+.editorial-vignette{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,
+    rgba(12,14,26,0.96) 0%,
+    rgba(12,14,26,0.7) 45%,
+    rgba(12,14,26,0.2) 100%);
+}
+.editorial-orb{
+  position:absolute;
+  bottom:-80px;right:200px;
+  width:400px;height:400px;
+  background:radial-gradient(circle,
+    rgba(212,176,90,0.12) 0%,transparent 65%);
+  pointer-events:none;
+}
+.editorial-inner{
+  position:relative;z-index:1;
+  max-width:var(--max-width);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:center;
+}
+.editorial-text{}
+.editorial-h{
+  font-family:'Cormorant',serif;
+  font-size:clamp(36px,5vw,62px);
+  font-weight:300;
+  line-height:0.94;
+  letter-spacing:-0.01em;
+  color:var(--w);
+  margin-bottom:24px;
+}
+.editorial-h em{
+  font-style:italic;
+  background:linear-gradient(120deg,var(--a),var(--a2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.editorial-p{
+  font-size:14px;font-weight:300;font-style:italic;
+  color:var(--w35);
+  line-height:1.8;
+  margin-bottom:36px;
+  max-width:420px;
+}
+.btn-amber-ghost{
+  font-size:10px;font-weight:400;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--a);
+  border:1px solid rgba(201,168,76,0.4);
+  padding:14px 32px;border-radius:2px;
+  transition:all 0.35s var(--ease);
+}
+.btn-amber-ghost:hover{
+  background:var(--a2);color:var(--bg);
+  box-shadow:0 0 32px rgba(201,168,76,0.22);
+}
+
+/* Editorial stat card */
+.ed-stat-card{
+  background:linear-gradient(145deg,
+    rgba(255,255,255,0.06),rgba(255,255,255,0.02));
+  border:1px solid var(--b2);
+  border-radius:4px;
+  backdrop-filter:blur(40px);
+  padding:36px;
+  position:relative;overflow:hidden;
+}
+.ed-stat-card::before{
+  content:'';
+  position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,
+    transparent,rgba(201,168,76,0.4),transparent);
+}
+.ed-kpi{margin-bottom:28px;}
+.ed-kpi-val{
+  font-family:'Cormorant',serif;
+  font-size:48px;font-weight:300;
+  color:var(--a2);line-height:1;
+  margin-bottom:4px;
+}
+.ed-kpi-label{
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--w18);
+}
+.ed-divider{height:1px;background:var(--b1);margin:20px 0;}
+
+/* ════════════════════════════════════════════
+   SELLERS
+════════════════════════════════════════════ */
+.sellers-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:64px;
+  align-items:start;
+}
+.promo-card{
+  background:transparent;
+  border:1px solid rgba(201,168,76,0.2);
+  padding:40px;
+  position:relative;overflow:hidden;
+  margin-top:40px;
+}
+.promo-card::before{
+  content:'';
+  position:absolute;top:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4),transparent);
+}
+.promo-card-title{
+  font-family:'Cormorant',serif;
+  font-size:22px;font-weight:400;font-style:italic;
+  color:var(--a2);
+  margin-bottom:12px;
+}
+.promo-card-body{
+  font-size:13px;font-weight:300;font-style:italic;
+  color:var(--w35);
+  line-height:1.75;
+  margin-bottom:28px;
+}
+.seller-list{display:flex;flex-direction:column;gap:0;}
+.seller-item{
+  display:flex;align-items:center;gap:20px;
+  padding:20px 0;
+  border-bottom:1px solid var(--b1);
+  transition:all 0.35s var(--ease);
+  cursor:pointer;
+}
+.seller-item:first-child{border-top:1px solid var(--b1);}
+.seller-item:hover{padding-left:8px;}
+.seller-rank{
+  font-family:'Cormorant',serif;
+  font-size:13px;font-weight:300;font-style:italic;
+  color:var(--w18);
+  width:24px;flex-shrink:0;
+  letter-spacing:0.05em;
+}
+.seller-avatar{
+  width:40px;height:40px;
+  border-radius:50%;
+  border:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant',serif;
+  font-size:16px;font-weight:300;font-style:italic;
+  color:var(--a);
+  flex-shrink:0;
+  transition:border-color 0.35s var(--ease);
+}
+.seller-item:hover .seller-avatar{border-color:rgba(201,168,76,0.5);}
+.seller-info{flex:1;}
+.seller-name{
+  font-size:13px;font-weight:400;
+  color:var(--w85);
+  margin-bottom:2px;
+  letter-spacing:0.02em;
+}
+.seller-meta{
+  font-size:10px;font-weight:300;font-style:italic;
+  color:var(--w18);
+  letter-spacing:0.08em;
+}
+.seller-score{
+  font-family:'Cormorant',serif;
+  font-size:18px;font-weight:300;
+  color:var(--a2);
+  flex-shrink:0;
+}
+.seller-score-label{
+  font-size:8px;font-weight:300;font-style:italic;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--w18);
+  text-align:right;
+  margin-top:2px;
+}
+
+/* ════════════════════════════════════════════
+   BOTTOM CTA
+════════════════════════════════════════════ */
+.cta-section{
+  padding:var(--sec-pad-v) var(--sec-pad-h);
+  text-align:center;
+  max-width:640px;
+  margin:0 auto;
+}
+.cta-rule{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-bottom:40px;
+}
+.cta-rule-line{height:1px;width:48px;background:rgba(201,168,76,0.3);}
+.cta-rule-text{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.20em;text-transform:uppercase;
+  color:var(--a);
+}
+.cta-title{
+  font-family:'Cormorant',serif;
+  font-size:clamp(40px,6vw,78px);
+  font-weight:300;
+  line-height:0.94;
+  letter-spacing:-0.01em;
+  color:var(--w);
+  margin-bottom:20px;
+}
+.cta-title em{
+  display:block;
+  font-style:italic;
+  background:linear-gradient(120deg,var(--a),var(--a2),var(--a3));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.cta-sub{
+  font-size:14px;font-weight:300;font-style:italic;
+  color:var(--w35);
+  line-height:1.8;
+  margin-bottom:44px;
+}
+.cta-actions{
+  display:flex;align-items:center;justify-content:center;
+  gap:16px;
+}
+
+/* ════════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════════ */
+footer{
+  border-top:1px solid var(--b1);
+  padding:32px var(--sec-pad-h);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.footer-logo{opacity:0.5;}
+.footer-copy{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.12em;
+  color:var(--w08);
+  text-align:center;
+}
+.footer-links{display:flex;gap:28px;}
+.footer-links a{
+  font-size:10px;font-weight:300;font-style:italic;
+  letter-spacing:0.10em;
+  color:var(--w08);
+  transition:color 0.3s var(--ease);
+}
+.footer-links a:hover{color:var(--w35);}
+
+/* Arc badge */
+.arc-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--b1);
+  padding:8px 20px;
+  margin-bottom:56px;
+}
+.arc-badge-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--gr);
+  box-shadow:0 0 8px var(--gr);
+}
+.arc-badge-text{
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.20em;text-transform:uppercase;
+  color:var(--w18);
+}
+
+/* Arc orb bottom-right of editorial */
+.arc-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:9px;font-weight:300;font-style:italic;
+  letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--w18);
+  border:1px solid var(--b1);
+  padding:6px 14px;
+  margin-bottom:16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a class="nav-logo" href="#">
+    <div class="logo-emblem"><span class="logo-v">V</span></div>
+    <span class="logo-name">Vendra</span>
+  </a>
+  <div class="nav-links">
+    <a href="#">Marketplace</a>
+    <a href="#">Sellers</a>
+    <a href="#">How it works</a>
+    <a href="#">About Arc</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-faucet">💧 Faucet</button>
+    <button class="btn-nav-ghost">My Profile</button>
+    <button class="btn-nav-amber">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="atm">
+    <div class="orb-a"></div>
+    <div class="orb-sl-l"></div>
+    <div class="orb-sl-r"></div>
+    <div class="grid-overlay"></div>
+    <div class="hairline"></div>
+  </div>
+
+  <div class="hero-inner">
+    <div class="arc-badge">
+      <div class="arc-badge-dot"></div>
+      <span class="arc-badge-text">Live on Arc Testnet · Powered by USDC</span>
+    </div>
+
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">Commerce Unchained</span>
+      <div class="eyebrow-line"></div>
+    </div>
+
+    <h1 class="hero-h1">
+      <span class="h1-line1">The marketplace</span>
+      <span class="h1-line2">everyone deserves</span>
+      <span class="h1-line3">Commerce Unchained</span>
+    </h1>
+
+    <p class="hero-sub">
+      Launch your store in minutes. Sell anything. Get paid instantly in USDC — with 0% platform fees and fraud protection baked into the protocol.
+    </p>
+
+    <div class="hero-actions">
+      <button class="btn-primary">Open Your Store</button>
+      <button class="btn-ghost">Explore Marketplace</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-val amber">0%</div>
+        <div class="stat-label">Platform Fees</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">&lt;2s</div>
+        <div class="stat-label">Settlement</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">USDC</div>
+        <div class="stat-label">Native Currency</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val amber">∞</div>
+        <div class="stat-label">Global Reach</div>
+      </div>
+    </div>
+
+    <!-- Showcase Card -->
+    <div class="showcase-wrap">
+      <div class="showcase-card">
+        <div class="sc-top">
+          <div>
+            <div class="sc-label">Store Balance</div>
+            <div class="sc-bal">$2,847.50</div>
+            <div class="sc-network">USDC · Arc Testnet · 0x3a9f...6ef4</div>
+          </div>
+          <div class="sc-badge">Settled</div>
+        </div>
+        <div class="sc-divider"></div>
+        <div class="sc-label" style="margin-bottom:12px;">Recent Transactions</div>
+        <div class="sc-row">
+          <div class="sc-row-l">
+            <div class="sc-dot sc-dot-a">💍</div>
+            <div>
+              <div class="sc-tx-name">Gold Crescent Ring — Nour Atelier</div>
+              <div class="sc-tx-sub">Apr 12 · 0x4a7f...8f1a · Settled in 1.2s</div>
+            </div>
+          </div>
+          <div class="sc-amount">+$45.00</div>
+        </div>
+        <div class="sc-row">
+          <div class="sc-row-l">
+            <div class="sc-dot sc-dot-s">🎵</div>
+            <div>
+              <div class="sc-tx-name">Lo-Fi Essentials Pack — SoundVault</div>
+              <div class="sc-tx-sub">Apr 12 · 0x9f2a...cc33 · Settled in 0.9s</div>
+            </div>
+          </div>
+          <div class="sc-amount">+$25.00</div>
+        </div>
+        <div class="sc-row">
+          <div class="sc-row-l">
+            <div class="sc-dot sc-dot-a">🎨</div>
+            <div>
+              <div class="sc-tx-name">Desert Bloom Print — Solar Prints</div>
+              <div class="sc-tx-sub">Apr 11 · 0x7c3f...2e91 · Settled in 1.4s</div>
+            </div>
+          </div>
+          <div class="sc-amount">+$55.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TICKER ── -->
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <!-- First set -->
+    <div class="ticker-item"><span>Arc Testnet</span><div class="ticker-dot"></div>0% Platform Fees<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>USDC Native</span><div class="ticker-dot"></div>Sub-Second Settlement<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>ERC-8183</span><div class="ticker-dot"></div>Escrow Protection<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>ERC-8004</span><div class="ticker-dot"></div>Onchain Identity<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>Commerce Unchained</span><div class="ticker-dot"></div>No Middlemen<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>Global Reach</span><div class="ticker-dot"></div>Borderless Payments<div class="ticker-dot"></div></div>
+    <!-- Duplicate for seamless loop -->
+    <div class="ticker-item"><span>Arc Testnet</span><div class="ticker-dot"></div>0% Platform Fees<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>USDC Native</span><div class="ticker-dot"></div>Sub-Second Settlement<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>ERC-8183</span><div class="ticker-dot"></div>Escrow Protection<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>ERC-8004</span><div class="ticker-dot"></div>Onchain Identity<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>Commerce Unchained</span><div class="ticker-dot"></div>No Middlemen<div class="ticker-dot"></div></div>
+    <div class="ticker-item"><span>Global Reach</span><div class="ticker-dot"></div>Borderless Payments<div class="ticker-dot"></div></div>
+  </div>
+</div>
+
+<!-- ── IMAGE STRIP ── -->
+<div class="strip-section">
+  <div class="strip-ghost"><span class="strip-ghost-text">Vendra</span></div>
+  <div class="strip-grid">
+    <div class="strip-col">
+      <div class="strip-col-bg sc1">
+        <svg class="strip-shape" width="120" height="120" viewBox="0 0 120 120" opacity="0.5">
+          <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(212,176,90,0.4)" stroke-width="1"/>
+          <circle cx="60" cy="60" r="28" fill="none" stroke="rgba(212,176,90,0.2)" stroke-width="1"/>
+          <circle cx="60" cy="32" r="8" fill="rgba(212,176,90,0.5)"/>
+          <path d="M60 40 L60 52" stroke="rgba(212,176,90,0.3)" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="strip-col-inner">
+        <div class="strip-col-cat">Fashion</div>
+        <div class="strip-col-name">Nour Atelier</div>
+        <div class="strip-col-price">From $38 USDC</div>
+      </div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-col-bg sc2">
+        <svg class="strip-shape" width="120" height="120" viewBox="0 0 120 120" opacity="0.5">
+          <polygon points="60,20 100,80 20,80" fill="none" stroke="rgba(155,181,200,0.4)" stroke-width="1"/>
+          <polygon points="60,35 85,72 35,72" fill="none" stroke="rgba(155,181,200,0.2)" stroke-width="1"/>
+          <circle cx="60" cy="20" r="4" fill="rgba(155,181,200,0.6)"/>
+        </svg>
+      </div>
+      <div class="strip-col-inner">
+        <div class="strip-col-cat">Digital</div>
+        <div class="strip-col-name">ByteDrop</div>
+        <div class="strip-col-price">From $19 USDC</div>
+      </div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-col-bg sc3">
+        <svg class="strip-shape" width="120" height="120" viewBox="0 0 120 120" opacity="0.5">
+          <rect x="30" y="30" width="60" height="60" fill="none" stroke="rgba(212,176,90,0.3)" stroke-width="1" transform="rotate(45,60,60)"/>
+          <rect x="42" y="42" width="36" height="36" fill="none" stroke="rgba(212,176,90,0.15)" stroke-width="1" transform="rotate(45,60,60)"/>
+          <circle cx="60" cy="60" r="5" fill="rgba(212,176,90,0.5)"/>
+        </svg>
+      </div>
+      <div class="strip-col-inner">
+        <div class="strip-col-cat">Art</div>
+        <div class="strip-col-name">Solar Prints</div>
+        <div class="strip-col-price">From $40 USDC</div>
+      </div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-col-bg sc4">
+        <svg class="strip-shape" width="120" height="120" viewBox="0 0 120 120" opacity="0.5">
+          <circle cx="60" cy="60" r="36" fill="none" stroke="rgba(143,196,152,0.4)" stroke-width="1"/>
+          <line x1="60" y1="24" x2="60" y2="96" stroke="rgba(143,196,152,0.2)" stroke-width="1"/>
+          <line x1="24" y1="60" x2="96" y2="60" stroke="rgba(143,196,152,0.2)" stroke-width="1"/>
+          <circle cx="60" cy="60" r="10" fill="rgba(143,196,152,0.3)"/>
+        </svg>
+      </div>
+      <div class="strip-col-inner">
+        <div class="strip-col-cat">Music</div>
+        <div class="strip-col-name">SoundVault</div>
+        <div class="strip-col-price">From $20 USDC</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PRODUCT GRID ── -->
+<div style="background:var(--bg2);padding:1px 0;">
+<div class="section">
+  <div class="section-eyebrow">
+    <div class="eyebrow-rule"></div>
+    <span class="eyebrow-label">Live Listings</span>
+  </div>
+  <div class="section-head">
+    <h2 class="section-title">Featured <em>products</em></h2>
+    <a href="#" class="view-all">View all listings <span>→</span></a>
+  </div>
+
+  <div class="product-grid">
+    <!-- Card 1 -->
+    <div class="pcard">
+      <div class="pcard-img">
+        <div class="pcard-img-fill" style="background:linear-gradient(145deg,#1e1608 0%,#2d2010 40%,#3d2e14 70%,#1e1608 100%);height:100%;display:flex;align-items:center;justify-content:center;">
+          <svg width="80" height="100" viewBox="0 0 80 100" opacity="0.6">
+            <circle cx="40" cy="42" r="26" fill="none" stroke="rgba(212,176,90,0.5)" stroke-width="1.5"/>
+            <circle cx="40" cy="42" r="18" fill="none" stroke="rgba(212,176,90,0.25)" stroke-width="1"/>
+            <circle cx="40" cy="18" r="7" fill="rgba(212,176,90,0.6)"/>
+            <path d="M40 25 L40 36" stroke="rgba(212,176,90,0.4)" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="pcard-overlay"></div>
+        <div class="pcard-hover-glow phg-a"></div>
+        <div class="pcard-cat">Fashion</div>
+        <div class="pcard-verified">Verified</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-name">Gold Crescent Ring</div>
+        <div class="pcard-seller">Nour Atelier · Arc Testnet</div>
+        <div class="pcard-foot">
+          <div class="pcard-price">$45 USDC</div>
+          <button class="pcard-buy">Buy Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="pcard">
+      <div class="pcard-img">
+        <div class="pcard-img-fill" style="background:linear-gradient(145deg,#060d18 0%,#0d1828 40%,#142035 70%,#060d18 100%);height:100%;display:flex;align-items:center;justify-content:center;">
+          <svg width="80" height="100" viewBox="0 0 80 100" opacity="0.6">
+            <polygon points="40,15 68,56 12,56" fill="none" stroke="rgba(155,181,200,0.5)" stroke-width="1.5"/>
+            <polygon points="40,28 58,52 22,52" fill="none" stroke="rgba(155,181,200,0.25)" stroke-width="1"/>
+            <circle cx="40" cy="15" r="5" fill="rgba(155,181,200,0.6)"/>
+          </svg>
+        </div>
+        <div class="pcard-overlay"></div>
+        <div class="pcard-hover-glow phg-s"></div>
+        <div class="pcard-cat">Digital</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-name">Dashboard UI Kit</div>
+        <div class="pcard-seller">ByteDrop · Arc Testnet</div>
+        <div class="pcard-foot">
+          <div class="pcard-price">$49 USDC</div>
+          <button class="pcard-buy">Buy Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="pcard">
+      <div class="pcard-img">
+        <div class="pcard-img-fill" style="background:linear-gradient(145deg,#100810 0%,#1a0f20 40%,#261630 70%,#100810 100%);height:100%;display:flex;align-items:center;justify-content:center;">
+          <svg width="80" height="100" viewBox="0 0 80 100" opacity="0.6">
+            <rect x="18" y="22" width="44" height="44" fill="none" stroke="rgba(212,176,90,0.4)" stroke-width="1.5" transform="rotate(45,40,44)"/>
+            <rect x="26" y="30" width="28" height="28" fill="none" stroke="rgba(212,176,90,0.2)" stroke-width="1" transform="rotate(45,40,44)"/>
+            <circle cx="40" cy="44" r="6" fill="rgba(212,176,90,0.5)"/>
+          </svg>
+        </div>
+        <div class="pcard-overlay"></div>
+        <div class="pcard-hover-glow phg-a"></div>
+        <div class="pcard-cat">Art</div>
+        <div class="pcard-verified">Verified</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-name">Desert Bloom Print</div>
+        <div class="pcard-seller">Solar Prints · Arc Testnet</div>
+        <div class="pcard-foot">
+          <div class="pcard-price">$55 USDC</div>
+          <button class="pcard-buy">Buy Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="pcard">
+      <div class="pcard-img">
+        <div class="pcard-img-fill" style="background:linear-gradient(145deg,#040c08 0%,#0a1810 40%,#122018 70%,#040c08 100%);height:100%;display:flex;align-items:center;justify-content:center;">
+          <svg width="80" height="100" viewBox="0 0 80 100" opacity="0.6">
+            <circle cx="40" cy="44" r="28" fill="none" stroke="rgba(143,196,152,0.4)" stroke-width="1.5"/>
+            <line x1="40" y1="16" x2="40" y2="72" stroke="rgba(143,196,152,0.2)" stroke-width="1"/>
+            <line x1="12" y1="44" x2="68" y2="44" stroke="rgba(143,196,152,0.2)" stroke-width="1"/>
+            <circle cx="40" cy="44" r="10" fill="rgba(143,196,152,0.3)" stroke="rgba(143,196,152,0.5)" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="pcard-overlay"></div>
+        <div class="pcard-hover-glow phg-s"></div>
+        <div class="pcard-cat">Music</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-name">Lo-Fi Essentials Pack</div>
+        <div class="pcard-seller">SoundVault · Arc Testnet</div>
+        <div class="pcard-foot">
+          <div class="pcard-price">$25 USDC</div>
+          <button class="pcard-buy">Buy Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── BENTO FEATURES ── -->
+<div style="background:var(--bg);padding:1px 0;">
+<div class="section">
+  <div class="section-eyebrow">
+    <div class="eyebrow-rule"></div>
+    <span class="eyebrow-label">Why Vendra</span>
+  </div>
+  <div class="section-head">
+    <h2 class="section-title">Built differently.<br/><em>By design.</em></h2>
+  </div>
+
+  <div class="bento-grid">
+    <!-- Card 1: Settlement -->
+    <div class="bcard">
+      <div class="bcard-num">01 — Settlement</div>
+      <div class="bcard-title">Paid in under two seconds</div>
+      <div class="bcard-body">Arc's Malachite consensus engine makes every transaction final and irreversible in under one second. Sellers get paid the moment buyers confirm — not days later.</div>
+      <div class="bcard-stat">&lt;2s</div>
+      <div class="bcard-stat-label">Settlement Time · Arc Testnet</div>
+    </div>
+
+    <!-- Card 2: Fees -->
+    <div class="bcard">
+      <div class="bcard-num">02 — Fees</div>
+      <div class="bcard-title">Zero percent. Zero exceptions.</div>
+      <div class="bcard-body">Traditional platforms take 6–20% of every sale. Vendra takes nothing. Arc's low gas costs make this economically viable for the first time at scale.</div>
+      <div class="bcard-stat">0%</div>
+      <div class="bcard-stat-label">Platform Fee · Forever</div>
+    </div>
+
+    <!-- Card Wide: Fee Comparison -->
+    <div class="bcard bcard-wide">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+        <div>
+          <div class="bcard-num">03 — Comparison</div>
+          <div class="bcard-title">What you keep vs. what they take</div>
+          <div class="bcard-body">Every platform in this market takes a cut. eBay, Etsy, Poshmark — they're all charging sellers who have no real alternative. Until now.</div>
+        </div>
+        <div class="fee-bars">
+          <div class="fee-row">
+            <div class="fee-label" style="color:var(--a);font-weight:500;">Vendra</div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar-fill amber" style="width:2%;"></div>
+            </div>
+            <div class="fee-pct amber">0%</div>
+          </div>
+          <div class="fee-row">
+            <div class="fee-label">Facebook</div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar-fill slate" style="width:25%;"></div>
+            </div>
+            <div class="fee-pct">5%</div>
+          </div>
+          <div class="fee-row">
+            <div class="fee-label">Etsy</div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar-fill slate" style="width:39%;"></div>
+            </div>
+            <div class="fee-pct">6.5%</div>
+          </div>
+          <div class="fee-row">
+            <div class="fee-label">eBay</div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar-fill dim" style="width:65%;"></div>
+            </div>
+            <div class="fee-pct">12.9%</div>
+          </div>
+          <div class="fee-row">
+            <div class="fee-label">Poshmark</div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar-fill dim" style="width:100%;"></div>
+            </div>
+            <div class="fee-pct">20%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── EDITORIAL FRAUD BLOCK ── -->
+<div class="editorial">
+  <div class="editorial-bg"></div>
+  <div class="editorial-vignette"></div>
+  <div class="editorial-orb"></div>
+  <div class="editorial-inner">
+    <div class="editorial-text">
+      <div class="arc-pill">
+        <div class="arc-badge-dot" style="width:4px;height:4px;"></div>
+        Protocol-Level Protection
+      </div>
+      <h2 class="editorial-h">Fraud doesn't<br/><em>stand a chance</em></h2>
+      <p class="editorial-p">
+        Every payment on Vendra is held in an ERC-8183 smart contract escrow until the buyer confirms delivery. No fake listings. No payment reversals. No "item not received" scams. The blockchain is the guarantor.
+      </p>
+      <p class="editorial-p">
+        Add onchain identity via ERC-8004 — a permanent, portable, unfakeable reputation score built from your entire transaction history. Real trust, not fake reviews.
+      </p>
+      <button class="btn-amber-ghost">Learn About Security →</button>
+    </div>
+
+    <div class="ed-stat-card">
+      <div class="ed-kpi">
+        <div class="ed-kpi-val">$0</div>
+        <div class="ed-kpi-label">Fraud losses on Vendra</div>
+      </div>
+      <div class="ed-kpi">
+        <div class="ed-kpi-val" style="color:var(--sl2);font-size:36px;">ERC-8183</div>
+        <div class="ed-kpi-label">Escrow Smart Contracts</div>
+      </div>
+      <div class="ed-divider"></div>
+      <div class="ed-kpi" style="margin-bottom:0;">
+        <div class="ed-kpi-val" style="font-size:36px;">ERC-8004</div>
+        <div class="ed-kpi-label">Onchain Identity &amp; Reputation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SELLERS ── -->
+<div style="background:var(--bg2);padding:1px 0;">
+<div class="section">
+  <div class="section-eyebrow">
+    <div class="eyebrow-rule"></div>
+    <span class="eyebrow-label">Top Sellers</span>
+  </div>
+  <div class="section-head">
+    <h2 class="section-title">The stores<br/><em>setting the standard</em></h2>
+  </div>
+
+  <div class="sellers-grid">
+    <div>
+      <p style="font-size:14px;font-weight:300;font-style:italic;color:var(--w35);line-height:1.8;max-width:380px;margin-bottom:32px;">
+        Every seller on Vendra owns their reputation onchain. It cannot be deleted, gamed, or transferred. What they build here, they keep forever.
+      </p>
+      <div class="promo-card">
+        <div class="promo-card-title">Launch your store today</div>
+        <div class="promo-card-body">Deploy in under two minutes. $0.50 USDC deployment fee on Arc Testnet. Your storefront, your products, your wallet — no middleman.</div>
+        <button class="btn-amber-ghost">Open Your Store →</button>
+      </div>
+    </div>
+
+    <div class="seller-list">
+      <div class="seller-item">
+        <div class="seller-rank">I</div>
+        <div class="seller-avatar">N</div>
+        <div class="seller-info">
+          <div class="seller-name">Nour Atelier</div>
+          <div class="seller-meta">Fashion · 12 products · 48 sales</div>
+        </div>
+        <div>
+          <div class="seller-score">9.8</div>
+          <div class="seller-score-label">Trust Score</div>
+        </div>
+      </div>
+      <div class="seller-item">
+        <div class="seller-rank">II</div>
+        <div class="seller-avatar">B</div>
+        <div class="seller-info">
+          <div class="seller-name">ByteDrop</div>
+          <div class="seller-meta">Digital · 8 products · 31 sales</div>
+        </div>
+        <div>
+          <div class="seller-score">9.6</div>
+          <div class="seller-score-label">Trust Score</div>
+        </div>
+      </div>
+      <div class="seller-item">
+        <div class="seller-rank">III</div>
+        <div class="seller-avatar">S</div>
+        <div class="seller-info">
+          <div class="seller-name">Solar Prints</div>
+          <div class="seller-meta">Art · 24 products · 27 sales</div>
+        </div>
+        <div>
+          <div class="seller-score">9.4</div>
+          <div class="seller-score-label">Trust Score</div>
+        </div>
+      </div>
+      <div class="seller-item">
+        <div class="seller-rank">IV</div>
+        <div class="seller-avatar">K</div>
+        <div class="seller-info">
+          <div class="seller-name">Kode Studio</div>
+          <div class="seller-meta">Services · 6 products · 19 sales</div>
+        </div>
+        <div>
+          <div class="seller-score">9.2</div>
+          <div class="seller-score-label">Trust Score</div>
+        </div>
+      </div>
+      <div class="seller-item">
+        <div class="seller-rank">V</div>
+        <div class="seller-avatar">U</div>
+        <div class="seller-info">
+          <div class="seller-name">Umami Box</div>
+          <div class="seller-meta">Food · 4 products · 14 sales</div>
+        </div>
+        <div>
+          <div class="seller-score">9.0</div>
+          <div class="seller-score-label">Trust Score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── BOTTOM CTA ── -->
+<div style="background:var(--bg);border-top:1px solid var(--b1);">
+<div class="cta-section">
+  <div class="cta-rule">
+    <div class="cta-rule-line"></div>
+    <div class="cta-rule-text">Commerce Unchained</div>
+    <div class="cta-rule-line"></div>
+  </div>
+  <h2 class="cta-title">
+    The future of commerce
+    <em>is already here</em>
+  </h2>
+  <p class="cta-sub">
+    Zero fees. Instant settlement. Fraud-proof escrow. Borderless payments. Everything legacy platforms promised and never delivered.
+  </p>
+  <div class="cta-actions">
+    <button class="btn-primary">Launch My Store</button>
+    <button class="btn-ghost">Explore Marketplace</button>
+  </div>
+</div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="logo-emblem" style="width:28px;height:28px;">
+        <span class="logo-v" style="font-size:12px;">V</span>
+      </div>
+      <span style="font-family:'Cormorant',serif;font-size:16px;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:var(--w85);">Vendra</span>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 Vendra · Built on Arc Testnet · Powered by USDC · 0% Fees</div>
+  <div class="footer-links">
+    <a href="#">Marketplace</a>
+    <a href="#">Sellers</a>
+    <a href="#">Arc Docs</a>
+    <a href="#">Faucet</a>
+  </div>
+</footer>
+
+</body>
+</html>
