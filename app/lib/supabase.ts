@@ -108,7 +108,7 @@ export async function getOrdersBySeller(walletAddress: string) {
 
 export async function uploadAvatar(walletAddress: string, file: File) {
   const ext = file.name.split('.').pop();
-  const path = `${walletAddress}.${ext}`;
+  const path = walletAddress + '.' + ext;
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
@@ -117,9 +117,41 @@ export async function uploadAvatar(walletAddress: string, file: File) {
 
 export async function uploadImage(path: string, file: File) {
   const ext = file.name.split('.').pop();
-  const fullPath = `${path}.${ext}`;
+  const fullPath = path + '.' + ext;
   const { error } = await supabase.storage.from('avatars').upload(fullPath, file, { upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from('avatars').getPublicUrl(fullPath);
   return data.publicUrl;
+}
+
+export async function getSellerReputation(walletAddress: string) {
+  const { data } = await supabase.from('seller_reputation').select('*').eq('wallet_address', walletAddress).single();
+  return data;
+}
+
+export async function upsertSellerReputation(walletAddress: string, updates: {
+  total_sales?: number; trust_score?: number; disputes?: number;
+}) {
+  const { data, error } = await supabase.from('seller_reputation').upsert({ wallet_address: walletAddress, ...updates }, { onConflict: 'wallet_address' }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createEscrowJob(job: {
+  order_id?: string; buyer_wallet: string; seller_wallet: string; amount: number; tx_hash: string;
+}) {
+  const { data, error } = await supabase.from('escrow_jobs').insert(job).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function releaseEscrow(jobId: string, releaseTx: string) {
+  const { data, error } = await supabase.from('escrow_jobs').update({ status: 'released', release_tx: releaseTx }).eq('id', jobId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getEscrowByOrder(orderId: string) {
+  const { data } = await supabase.from('escrow_jobs').select('*').eq('order_id', orderId).single();
+  return data;
 }
