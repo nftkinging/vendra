@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+const fs = require('fs');
+const css = `@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
 
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -323,3 +324,6 @@ body::before{
 /* ORDER CARD */
 .v-order-card{background:linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid var(--b2);position:relative;overflow:hidden;margin-bottom:24px;}
 .v-order-card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(212,176,90,0.35),transparent);}
+`;
+fs.writeFileSync('app/globals.css', css, 'utf8');
+console.log('globals.css done:', fs.existsSync('app/globals.css'));

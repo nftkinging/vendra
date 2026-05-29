@@ -8,7 +8,7 @@ import CartDrawer from './components/CartDrawer';
 
 export default function Nav() {
   const { isConnected } = useAccount();
-  const [hover, setHover] = useState(false);
+  const [fHover, setFHover] = useState(false);
   return (
     <>
       <CartDrawer />
@@ -19,15 +19,13 @@ export default function Nav() {
         </Link>
         <div className='v-nav-links'>
           <Link href='/marketplace'>Marketplace</Link>
-          {isConnected && <Link href='/profile'>My Profile</Link>}
+          <Link href='/store/create'>Sell</Link>
+          {isConnected && <Link href='/profile'>Profile</Link>}
         </div>
         <div className='v-nav-right'>
-          <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer'
-            onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-            style={{ textDecoration: 'none' }}>
-            <button className='btn-faucet'>Faucet</button>
+          <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{ textDecoration: 'none' }} onMouseEnter={() => setFHover(true)} onMouseLeave={() => setFHover(false)}>
+            <button className='btn-faucet' style={{ border: fHover ? '1px solid rgba(155,181,200,0.45)' : '1px solid rgba(155,181,200,0.25)' }}>💧 Faucet</button>
           </a>
-          {isConnected && <Link href='/profile'><button className='btn-nav-ghost'>My Profile</button></Link>}
           <CartButton />
           <ConnectButton label='Connect Wallet' accountStatus='address' chainStatus='none' showBalance={false} />
         </div>
