@@ -4,357 +4,160 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getStoreByWallet, updateStore, saveProduct, deleteProduct, uploadImage } from '../../lib/supabase';
+import Link from 'next/link';
 
-const categories = [
-  { icon: '👗', name: 'Fashion' }, { icon: '💾', name: 'Digital' },
-  { icon: '🎨', name: 'Art' }, { icon: '🛠', name: 'Services' },
-  { icon: '🍱', name: 'Food' }, { icon: '📱', name: 'Tech' },
-  { icon: '🎵', name: 'Music' }, { icon: '✨', name: 'Other' },
-];
-const productTypes = ['Physical', 'Digital', 'Service'];
+const CATS = [{icon:'👗',name:'Fashion'},{icon:'💾',name:'Digital'},{icon:'🎨',name:'Art'},{icon:'🛠',name:'Services'},{icon:'🍱',name:'Food'},{icon:'📱',name:'Tech'},{icon:'🎵',name:'Music'},{icon:'✨',name:'Other'}];
+const TYPES = ['Physical','Digital','Service'];
 
 function EditStoreContent() {
   const { address } = useAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
   const bannerRef = useRef<HTMLInputElement>(null);
-  const productImgRef = useRef<HTMLInputElement>(null);
-
+  const imgRef = useRef<HTMLInputElement>(null);
   const [store, setStore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'products'>('details');
-  const [form, setForm] = useState({ name: '', tagline: '', description: '', xHandle: '', category: 'Fashion' });
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [tab, setTab] = useState<'details'|'products'>('details');
+  const [form, setForm] = useState({ name:'', tagline:'', description:'', xHandle:'', category:'Fashion' });
+  const [bannerFile, setBannerFile] = useState<File|null>(null);
   const [bannerPreview, setBannerPreview] = useState('');
-  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '', type: 'Physical' });
-  const [productImgFile, setProductImgFile] = useState<File | null>(null);
-  const [productImgPreview, setProductImgPreview] = useState('');
-  const [addingProduct, setAddingProduct] = useState(false);
+  const [newProd, setNewProd] = useState({ name:'', description:'', price:'', type:'Physical' });
+  const [prodFile, setProdFile] = useState<File|null>(null);
+  const [prodPreview, setProdPreview] = useState('');
+  const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState('');
-  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
 
-  useEffect(() => {
-    if (searchParams.get('tab') === 'products') setActiveTab('products');
-  }, [searchParams]);
-
+  useEffect(() => { if (searchParams.get('tab')==='products') setTab('products'); }, [searchParams]);
   useEffect(() => {
     if (!address) return;
-    const load = async () => {
-      const s = await getStoreByWallet(address);
+    getStoreByWallet(address).then(s => {
       if (!s) { router.push('/store/create'); return; }
       setStore(s);
-      setForm({
-        name: s.name || '',
-        tagline: s.tagline || '',
-        description: s.description || '',
-        xHandle: s.x_handle || '',
-        category: s.category || 'Fashion',
-      });
-      setBannerPreview(s.banner_url || '');
+      setForm({ name:s.name||'', tagline:s.tagline||'', description:s.description||'', xHandle:s.x_handle||'', category:s.category||'Fashion' });
+      setBannerPreview(s.banner_url||'');
       setLoading(false);
-    };
-    load();
+    });
   }, [address, router]);
 
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
-  };
-
-  const handleProductImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setProductImgFile(file);
-    setProductImgPreview(URL.createObjectURL(file));
-  };
-
-  const handleSaveDetails = async () => {
-    if (!form.name) { setError('Store name is required'); return; }
+  const handleSave = async () => {
+    if (!form.name) { setError('Store name required'); return; }
     setSaving(true); setError(''); setSuccess('');
     try {
-      let bannerUrl = store.banner_url || '';
-      if (bannerFile && address) {
-        bannerUrl = await uploadImage(`banners/${address}`, bannerFile);
-      }
-      await updateStore(store.id, {
-        name: form.name,
-        tagline: form.tagline,
-        description: form.description,
-        category: form.category,
-        x_handle: form.xHandle,
-        banner_url: bannerUrl,
-      });
-      setSuccess('Store updated!');
-      setTimeout(() => setSuccess(''), 2500);
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+      let bannerUrl = store.banner_url||'';
+      if (bannerFile && address) bannerUrl = await uploadImage('banners/'+address, bannerFile);
+      await updateStore(store.id, { name:form.name, tagline:form.tagline, description:form.description, category:form.category, x_handle:form.xHandle, banner_url:bannerUrl });
+      setSuccess('Store updated!'); setTimeout(()=>setSuccess(''),2500);
+    } catch { setError('Something went wrong.'); } finally { setSaving(false); }
   };
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.price) { setError('Name and price are required'); return; }
-    setAddingProduct(true); setError('');
+    if (!newProd.name||!newProd.price) { setError('Name and price required'); return; }
+    setAdding(true); setError('');
     try {
       let imageUrl = '';
-      if (productImgFile && address) {
-        imageUrl = await uploadImage(`products/${store.id}/${Date.now()}`, productImgFile);
-      }
-      const product = await saveProduct({
-        store_id: store.id,
-        name: newProduct.name,
-        description: newProduct.description,
-        price: Number(newProduct.price),
-        type: newProduct.type,
-        image_url: imageUrl,
-      });
-      setStore({ ...store, products: [...(store.products || []), product] });
-      setNewProduct({ name: '', description: '', price: '', type: 'Physical' });
-      setProductImgFile(null);
-      setProductImgPreview('');
-      setShowAddProduct(false);
-    } catch {
-      setError('Failed to add product. Please try again.');
-    } finally {
-      setAddingProduct(false);
-    }
+      if (prodFile && address) imageUrl = await uploadImage('products/'+store.id+'/'+Date.now(), prodFile);
+      const p = await saveProduct({ store_id:store.id, name:newProd.name, description:newProd.description, price:Number(newProd.price), type:newProd.type, image_url:imageUrl });
+      setStore({...store, products:[...(store.products||[]),p]});
+      setNewProd({name:'',description:'',price:'',type:'Physical'}); setProdFile(null); setProdPreview(''); setShowAdd(false);
+    } catch { setError('Failed to add product.'); } finally { setAdding(false); }
   };
 
-  const handleDeleteProduct = async (productId: string) => {
-    setDeletingId(productId);
-    try {
-      await deleteProduct(productId);
-      setStore({ ...store, products: store.products.filter((p: any) => p.id !== productId) });
-    } catch {
-      setError('Failed to delete product.');
-    } finally {
-      setDeletingId('');
-    }
+  const handleDeleteProduct = async (id: string) => {
+    setDeletingId(id);
+    try { await deleteProduct(id); setStore({...store,products:store.products.filter((p:any)=>p.id!==id)}); }
+    catch { setError('Failed to delete.'); } finally { setDeletingId(''); }
   };
 
-  const inputStyle = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '0.6rem 0', color: 'var(--ink)', fontFamily: "'Barlow', sans-serif", fontSize: '0.95rem', outline: 'none' };
-  const labelStyle = { display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: '0.4rem' };
-  const blockHead = { padding: '0.65rem 1.25rem', borderBottom: '1px solid var(--border)', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' as const, background: 'var(--bg3)' };
-
-  if (loading) return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Nav />
-      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading store...</div>
-    </main>
-  );
+  if (loading) return <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center'}}><Nav /><div className='v-spinner'/></main>;
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <main style={{minHeight:'100vh',background:'var(--bg)'}}>
       <Nav />
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '7rem 2.5rem 4rem' }}>
-
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--accent)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Manage Store</div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', letterSpacing: '0.02em', marginBottom: '0.25rem' }}>{store?.name}</div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em' }}>
-            {store?.products?.length || 0} products · {store?.category} · Arc Testnet
-          </div>
+      <div style={{maxWidth:700,margin:'0 auto',padding:'120px 56px 80px'}}>
+        <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Manage Store</span></div>
+        <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:8}}>{store?.name}</h1>
+        <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',marginBottom:28}}>{store?.products?.length||0}{' products · '}{store?.category}{' · Arc Testnet'}</div>
+        <div style={{display:'flex',gap:10,marginBottom:32}}>
+          <a href={'/store/'+store?.slug} target='_blank' rel='noopener noreferrer'><button className='btn-amber-ghost' style={{fontSize:10,padding:'8px 16px'}}>View Storefront ↗</button></a>
+          <Link href='/profile'><button className='btn-ghost' style={{fontSize:10,padding:'8px 16px'}}>← Profile</button></Link>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-          <a href={`/store/${store?.slug}`} target="_blank" rel="noopener noreferrer">
-            <button style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-              View Storefront ↗
-            </button>
-          </a>
-          <button onClick={() => router.push('/profile')} style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-            ← Back to Profile
-          </button>
-        </div>
-
         {/* Tabs */}
-        <div style={{ display: 'flex', border: '1px solid var(--border)', marginBottom: '2rem' }}>
-          <button onClick={() => setActiveTab('details')} style={{ flex: 1, fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.75rem', border: 'none', cursor: 'pointer', background: activeTab === 'details' ? 'var(--accent)' : 'transparent', color: activeTab === 'details' ? '#fff' : 'var(--muted)', transition: 'all 0.2s' }}>
-            Store Details
-          </button>
-          <button onClick={() => setActiveTab('products')} style={{ flex: 1, fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.75rem', border: 'none', cursor: 'pointer', background: activeTab === 'products' ? 'var(--accent)' : 'transparent', color: activeTab === 'products' ? '#fff' : 'var(--muted)', transition: 'all 0.2s' }}>
-            Products ({store?.products?.length || 0})
-          </button>
+        <div style={{display:'flex',borderBottom:'1px solid var(--b1)',marginBottom:32}}>
+          <button onClick={()=>setTab('details')} style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:300,fontStyle:'italic',letterSpacing:'0.14em',textTransform:'uppercase',padding:'12px 24px',background:'transparent',border:'none',borderBottom:tab==='details'?'1px solid var(--a)':'1px solid transparent',color:tab==='details'?'var(--a)':'var(--w18)',cursor:'pointer',transition:'all 0.2s'}}>Store Details</button>
+          <button onClick={()=>setTab('products')} style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:300,fontStyle:'italic',letterSpacing:'0.14em',textTransform:'uppercase',padding:'12px 24px',background:'transparent',border:'none',borderBottom:tab==='products'?'1px solid var(--a)':'1px solid transparent',color:tab==='products'?'var(--a)':'var(--w18)',cursor:'pointer',transition:'all 0.2s'}}>{'Products ('}{store?.products?.length||0}{')'}</button>
         </div>
-
-        {/* DETAILS TAB */}
-        {activeTab === 'details' && (
+        {/* DETAILS */}
+        {tab==='details'&&(
           <>
-            {/* Banner */}
-            <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-              <div style={blockHead}>Store Banner</div>
-              <div style={{ padding: '1.25rem' }}>
-                <input ref={bannerRef} type="file" accept="image/*" onChange={handleBannerChange} style={{ display: 'none' }} />
-                {bannerPreview ? (
-                  <div style={{ position: 'relative' }}>
-                    <img src={bannerPreview} alt="banner" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
-                    <button onClick={() => bannerRef.current?.click()} style={{ position: 'absolute', bottom: '0.75rem', right: '0.75rem', background: 'rgba(10,6,18,0.85)', color: 'var(--ink)', border: '1px solid var(--border)', padding: '0.4rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                      Change
-                    </button>
-                  </div>
-                ) : (
-                  <div onClick={() => bannerRef.current?.click()}
-                    style={{ height: 140, border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '0.5rem' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                    <div style={{ fontSize: '1.8rem' }}>🖼️</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Click to upload banner</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--muted)', opacity: 0.6 }}>Recommended: 1200×400px</div>
-                  </div>
-                )}
+            <div style={{border:'1px solid var(--b1)',marginBottom:24}}>
+              <div className='v-block-head'>Store Banner</div>
+              <div style={{padding:20}}>
+                <input ref={bannerRef} type='file' accept='image/*' onChange={e=>{const f=e.target.files?.[0];if(!f)return;setBannerFile(f);setBannerPreview(URL.createObjectURL(f));}} style={{display:'none'}}/>
+                {bannerPreview
+                  ?<div style={{position:'relative'}}><img src={bannerPreview} alt='banner' style={{width:'100%',height:140,objectFit:'cover',display:'block',filter:'brightness(0.65)'}}/><button onClick={()=>bannerRef.current?.click()} style={{position:'absolute',bottom:10,right:10,fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:300,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--w35)',border:'1px solid var(--b2)',padding:'5px 10px',background:'rgba(12,14,26,0.85)',cursor:'pointer'}}>Change</button></div>
+                  :<div onClick={()=>bannerRef.current?.click()} className='v-upload-zone' style={{height:120}}><div style={{fontSize:'1.8rem'}}>{'🖼️'}</div><div className='v-upload-label'>Click to upload banner</div></div>}
               </div>
             </div>
-
-            {/* Store info */}
-            <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-              <div style={blockHead}>Store Info</div>
-              <div style={{ padding: '1.25rem' }}>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={labelStyle}>Store name *</label>
-                  <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-                </div>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={labelStyle}>Tagline</label>
-                  <input type="text" placeholder="One line about what you sell" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inputStyle} />
-                </div>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={labelStyle}>Description</label>
-                  <textarea placeholder="Tell buyers what makes your store special..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} />
-                </div>
-                <div>
-                  <label style={labelStyle}>X (Twitter) handle</label>
-                  <input type="text" placeholder="@yourhandle" value={form.xHandle} onChange={e => setForm({ ...form, xHandle: e.target.value })} style={inputStyle} />
-                </div>
+            <div style={{border:'1px solid var(--b1)',marginBottom:24}}>
+              <div className='v-block-head'>Store Info</div>
+              <div style={{padding:20}}>
+                <div className='v-field'><label className='v-label'>Store name *</label><input className='v-input' value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+                <div className='v-field'><label className='v-label'>Tagline</label><input className='v-input' placeholder='One line about what you sell' value={form.tagline} onChange={e=>setForm({...form,tagline:e.target.value})}/></div>
+                <div className='v-field'><label className='v-label'>Description</label><textarea className='v-textarea' value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div>
+                <div className='v-field' style={{marginBottom:0}}><label className='v-label'>X (Twitter) handle</label><input className='v-input' placeholder='@yourhandle' value={form.xHandle} onChange={e=>setForm({...form,xHandle:e.target.value})}/></div>
               </div>
             </div>
-
-            {/* Category */}
-            <div style={{ border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-              <div style={blockHead}>Category</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
-                {categories.map(cat => (
-                  <div key={cat.name} onClick={() => setForm({ ...form, category: cat.name })}
-                    style={{ padding: '0.75rem 0.5rem', textAlign: 'center', cursor: 'pointer', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: form.category === cat.name ? 'var(--accent)' : 'transparent', transition: 'all 0.2s' }}>
-                    <div style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{cat.icon}</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: form.category === cat.name ? '#fff' : 'var(--muted)' }}>{cat.name}</div>
-                  </div>
-                ))}
+            <div style={{border:'1px solid var(--b1)',marginBottom:24}}>
+              <div className='v-block-head'>Category</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'1px',background:'var(--b1)'}}>
+                {CATS.map(c=><div key={c.name} onClick={()=>setForm({...form,category:c.name})} style={{padding:'14px 8px',textAlign:'center',cursor:'pointer',background:form.category===c.name?'rgba(212,176,90,0.10)':'var(--bg2)',borderBottom:form.category===c.name?'1px solid var(--a)':'1px solid transparent',transition:'all 0.2s'}}><div style={{fontSize:'1.1rem',marginBottom:4}}>{c.icon}</div><div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.10em',textTransform:'uppercase',color:form.category===c.name?'var(--a)':'var(--w18)'}}>{c.name}</div></div>)}
               </div>
             </div>
-
-            {error && <div style={{ border: '1px solid rgba(232,80,80,0.3)', background: 'rgba(232,80,80,0.08)', padding: '0.75rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: '#e85050', letterSpacing: '0.05em', marginBottom: '1rem' }}>{error}</div>}
-            {success && <div style={{ border: '1px solid rgba(80,200,80,0.3)', background: 'rgba(80,200,80,0.08)', padding: '0.75rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: '#50c850', letterSpacing: '0.05em', marginBottom: '1rem' }}>{success}</div>}
-
-            <button onClick={handleSaveDetails} disabled={saving} style={{ width: '100%', background: saving ? 'var(--muted)' : 'var(--accent)', color: '#fff', border: 'none', padding: '1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.15em', cursor: saving ? 'not-allowed' : 'pointer' }}>
-              {saving ? 'Saving...' : 'Save Changes →'}
-            </button>
+            {error&&<div style={{border:'1px solid rgba(232,112,112,0.3)',background:'rgba(232,112,112,0.08)',padding:'10px 16px',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--err)',marginBottom:16}}>{error}</div>}
+            {success&&<div style={{border:'1px solid rgba(143,196,152,0.3)',background:'rgba(143,196,152,0.08)',padding:'10px 16px',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--gr)',marginBottom:16}}>{success}</div>}
+            <button onClick={handleSave} disabled={saving} className='btn-primary' style={{width:'100%',padding:'16px',fontSize:11}}>{saving?'Saving...':'Save Changes →'}</button>
           </>
         )}
-
-        {/* PRODUCTS TAB */}
-        {activeTab === 'products' && (
+        {/* PRODUCTS */}
+        {tab==='products'&&(
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                {store?.products?.length || 0} products listed
-              </div>
-              <button onClick={() => { setShowAddProduct(!showAddProduct); setError(''); }}
-                style={{ background: showAddProduct ? 'transparent' : 'var(--accent)', color: showAddProduct ? 'var(--muted)' : '#fff', border: showAddProduct ? '1px solid var(--border)' : 'none', padding: '0.5rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                {showAddProduct ? 'Cancel' : '+ Add Product'}
-              </button>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',textTransform:'uppercase'}}>{store?.products?.length||0}{' products listed'}</div>
+              <button onClick={()=>{setShowAdd(!showAdd);setError('');}} className={showAdd?'btn-ghost':'btn-amber-ghost'} style={{fontSize:10,padding:'8px 16px'}}>{showAdd?'Cancel':'+ Add Product'}</button>
             </div>
-
-            {/* Add product form */}
-            {showAddProduct && (
-              <div style={{ border: '1px solid var(--accent)', marginBottom: '1.5rem' }}>
-                <div style={{ padding: '0.65rem 1.25rem', borderBottom: '1px solid var(--border)', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--accent)', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(201,77,122,0.08)' }}>New Product</div>
-                <div style={{ padding: '1.25rem' }}>
-                  {/* Product image */}
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <label style={labelStyle}>Product Image</label>
-                    <input ref={productImgRef} type="file" accept="image/*" onChange={handleProductImgChange} style={{ display: 'none' }} />
-                    {productImgPreview ? (
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <img src={productImgPreview} alt="product preview" style={{ width: 120, height: 120, objectFit: 'cover', display: 'block', border: '1px solid var(--border)' }} />
-                        <button onClick={() => productImgRef.current?.click()} style={{ position: 'absolute', bottom: '0.4rem', right: '0.4rem', background: 'rgba(10,6,18,0.85)', color: 'var(--ink)', border: '1px solid var(--border)', padding: '0.25rem 0.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.5rem', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Change
-                        </button>
-                      </div>
-                    ) : (
-                      <div onClick={() => productImgRef.current?.click()}
-                        style={{ width: 120, height: 120, border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '0.3rem' }}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                        <div style={{ fontSize: '1.5rem' }}>📷</div>
-                        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.5rem', color: 'var(--muted)', textAlign: 'center', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Add photo</div>
-                      </div>
-                    )}
+            {showAdd&&(
+              <div style={{border:'1px solid rgba(212,176,90,0.25)',marginBottom:20,background:'rgba(212,176,90,0.03)'}}>
+                <div className='v-block-head' style={{color:'var(--a)'}}>New Product</div>
+                <div style={{padding:20}}>
+                  <div className='v-field'><label className='v-label'>Product Image</label>
+                    <input ref={imgRef} type='file' accept='image/*' onChange={e=>{const f=e.target.files?.[0];if(!f)return;setProdFile(f);setProdPreview(URL.createObjectURL(f));}} style={{display:'none'}}/>
+                    {prodPreview
+                      ?<div style={{position:'relative',display:'inline-block'}}><img src={prodPreview} alt='product' style={{width:100,height:100,objectFit:'cover',border:'1px solid var(--b1)',display:'block'}}/><button onClick={()=>imgRef.current?.click()} style={{position:'absolute',bottom:4,right:4,fontFamily:"'DM Sans',sans-serif",fontSize:8,color:'var(--w35)',border:'1px solid var(--b2)',padding:'3px 8px',background:'rgba(12,14,26,0.85)',cursor:'pointer'}}>Change</button></div>
+                      :<div onClick={()=>imgRef.current?.click()} style={{width:100,height:100,border:'1px dashed var(--b2)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',gap:4}} onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--a)')} onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--b2)')}><div style={{fontSize:'1.5rem'}}>{'📷'}</div><div style={{fontSize:9,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.08em'}}>Add photo</div></div>}
                   </div>
-
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={labelStyle}>Product name *</label>
-                    <input type="text" placeholder="e.g. Gold Ring" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} style={inputStyle} />
+                  <div className='v-field'><label className='v-label'>Product name *</label><input className='v-input' placeholder='e.g. Gold Ring' value={newProd.name} onChange={e=>setNewProd({...newProd,name:e.target.value})}/></div>
+                  <div className='v-field'><label className='v-label'>Description</label><input className='v-input' placeholder='What is this product?' value={newProd.description} onChange={e=>setNewProd({...newProd,description:e.target.value})}/></div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:20}}>
+                    <div><label className='v-label'>Price (USDC) *</label><input className='v-input' type='number' placeholder='e.g. 25' value={newProd.price} onChange={e=>setNewProd({...newProd,price:e.target.value})}/></div>
+                    <div><label className='v-label'>Type</label><select className='v-input' value={newProd.type} onChange={e=>setNewProd({...newProd,type:e.target.value})} style={{cursor:'pointer'}}>{TYPES.map(t=><option key={t} value={t} style={{background:'var(--bg2)'}}>{t}</option>)}</select></div>
                   </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={labelStyle}>Description</label>
-                    <input type="text" placeholder="What is this product?" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} style={inputStyle} />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                    <div>
-                      <label style={labelStyle}>Price (USDC) *</label>
-                      <input type="number" placeholder="e.g. 25" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Type</label>
-                      <select value={newProduct.type} onChange={e => setNewProduct({ ...newProduct, type: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
-                        {productTypes.map(t => <option key={t} value={t} style={{ background: '#1a1330' }}>{t}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {error && <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: '#e85050', marginBottom: '0.75rem' }}>{error}</div>}
-
-                  <button onClick={handleAddProduct} disabled={addingProduct} style={{ width: '100%', background: addingProduct ? 'var(--muted)' : 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.1em', cursor: addingProduct ? 'not-allowed' : 'pointer' }}>
-                    {addingProduct ? 'Adding...' : 'Add Product →'}
-                  </button>
+                  {error&&<div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--err)',marginBottom:12}}>{error}</div>}
+                  <button onClick={handleAddProduct} disabled={adding} className='btn-primary' style={{width:'100%',padding:'14px',fontSize:11}}>{adding?'Adding...':'Add Product →'}</button>
                 </div>
-              </div>
-            )}
-
-            {/* Products list */}
-            <div style={{ border: '1px solid var(--border)' }}>
-              {!store?.products?.length ? (
-                <div style={{ padding: '3rem', textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  No products yet — add your first one above
-                </div>
-              ) : store.products.map((product: any) => (
-                <div key={product.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} style={{ width: 56, height: 56, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }} />
-                  ) : (
-                    <div style={{ width: 56, height: 56, background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.5rem', border: '1px solid var(--border)' }}>📦</div>
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 500, fontSize: '0.95rem', marginBottom: '0.2rem' }}>{product.name}</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      {product.type} · ${product.price} USDC
-                    </div>
-                    {product.description && (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.2rem', fontWeight: 300 }}>{product.description}</div>
-                    )}
-                  </div>
-                  <button onClick={() => handleDeleteProduct(product.id)} disabled={deletingId === product.id}
-                    style={{ background: 'transparent', color: '#e84040', border: '1px solid rgba(232,64,64,0.3)', padding: '0.35rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0 }}>
-                    {deletingId === product.id ? '...' : 'Remove'}
-                  </button>
-                </div>
-              ))}
+              </div>)}
+            <div style={{border:'1px solid var(--b1)'}}>
+              {!store?.products?.length
+                ?<div style={{padding:'32px',textAlign:'center',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em'}}>No products yet — add your first one above</div>
+                :store.products.map((p:any)=>(
+                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:16,padding:'16px 20px',borderBottom:'1px solid var(--b1)'}}>
+                    {p.image_url?<img src={p.image_url} alt={p.name} style={{width:48,height:48,objectFit:'cover',flexShrink:0,border:'1px solid var(--b1)'}}/>:<div style={{width:48,height:48,background:'var(--s1)',border:'1px solid var(--b1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'1.4rem'}}>{'📦'}</div>}
+                    <div style={{flex:1}}><div style={{fontFamily:"'Cormorant',serif",fontSize:16,fontWeight:300,color:'var(--w85)',marginBottom:2}}>{p.name}</div><div style={{fontSize:9,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',textTransform:'uppercase'}}>{p.type}{' · $'}{p.price}{' USDC'}</div></div>
+                    <button onClick={()=>handleDeleteProduct(p.id)} disabled={deletingId===p.id} className='btn-danger' style={{fontSize:9,padding:'6px 12px',flexShrink:0}}>{deletingId===p.id?'...':'Remove'}</button>
+                  </div>))}
             </div>
           </>
         )}
@@ -364,9 +167,5 @@ function EditStoreContent() {
 }
 
 export default function EditStore() {
-  return (
-    <Suspense>
-      <EditStoreContent />
-    </Suspense>
-  );
+  return <Suspense><EditStoreContent /></Suspense>;
 }
