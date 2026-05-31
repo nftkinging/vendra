@@ -5,10 +5,6 @@ import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, deleteStore } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
-import ArcUnifiedBalance from '../components/ArcUnifiedBalance';
-import ArcIdentityBadge from '../components/ArcIdentityBadge';
-import ArcAgenticBanner from '../components/ArcAgenticBanner';
-import CircleAppKitPanel from '../components/CircleAppKitPanel';
 
 export default function Profile() {
   const { address, isConnected } = useAccount();
@@ -89,10 +85,6 @@ export default function Profile() {
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'1px',background:'var(--b1)',marginBottom:24}}>
               {[{val:'$'+totalRevenue.toFixed(2),label:'Total Revenue',c:'var(--a2)'},{val:String(sellerOrders.length),label:'Orders',c:'var(--w)'},{val:String(store?.products?.length||0),label:'Products',c:'var(--w)'},{val:'0%',label:'Platform Fee',c:'var(--a2)'}].map(s=>(<div key={s.label} className='v-profile-stat'><div className='v-profile-stat-val' style={{color:s.c}}>{s.val}</div><div className='v-profile-stat-label'>{s.label}</div></div>))}
             </div>
-            {/* ERC-8004 Identity Badge */}
-            <div style={{marginBottom:24}}>
-              <ArcIdentityBadge score={trustScore} totalSales={sellerOrders.length} verified={sellerOrders.length>0} />
-            </div>
             {/* Main grid: store + balance */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:24,marginBottom:32,alignItems:'start'}}>
               <div>
@@ -129,12 +121,8 @@ export default function Profile() {
                   </div>
                 </div>
                 {/* Circle App Kit Panel */}
-                <CircleAppKitPanel />
+                
               </div>
-            </div>
-            {/* Arc Agentic Banner */}
-            <div style={{marginBottom:32}}>
-              <ArcAgenticBanner />
             </div>
             {/* All Sales */}
             <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>All Sales</span></div>
@@ -149,8 +137,6 @@ export default function Profile() {
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1px',background:'var(--b1)',marginBottom:32}}>
               {[{val:'$'+totalSpent.toFixed(2),label:'Total Spent',c:'var(--sl)'},{val:String(buyerOrders.length),label:'Orders',c:'var(--w)'},{val:'Arc Testnet',label:'Network',c:'var(--w)'}].map(s=>(<div key={s.label} className='v-profile-stat'><div className='v-profile-stat-val' style={{color:s.c}}>{s.val}</div><div className='v-profile-stat-label'>{s.label}</div></div>))}
             </div>
-            {/* Circle App Kit Panel */}
-            <div style={{marginBottom:32}}><CircleAppKitPanel /></div>
             <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Order History</span></div>
             <div style={{border:'1px solid var(--b1)',marginBottom:32}}>
               {buyerOrders.length===0?<div style={{padding:32,textAlign:'center',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em'}}>No orders yet — <Link href='/marketplace' style={{color:'var(--a)'}}>explore the marketplace</Link></div>
