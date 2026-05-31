@@ -1,0 +1,136 @@
+const fs = require('fs');
+
+// ── Fix 1: Remove duplicate import in profile ────────────────────────────────
+let profile = fs.readFileSync('app/profile/page.tsx', 'utf8');
+// Remove the second duplicate import line
+profile = profile.replace(
+  "import CircleAppKitPanel from '../components/CircleAppKitPanel';\nimport CircleAppKitPanel from '../components/CircleAppKitPanel';",
+  "import CircleAppKitPanel from '../components/CircleAppKitPanel';"
+);
+fs.writeFileSync('app/profile/page.tsx', profile, 'utf8');
+console.log('Fix 1 done — duplicate import removed');
+
+// ── Fix 2 + 3: Rewrite CircleAppKitPanel without problematic adapter imports ──
+// The adapter-viem-v2 package has viem version conflicts.
+// Solution: use wagmi's sendTransaction directly instead of the App Kit SDK,
+// and show the App Kit UI/docs without importing the broken adapter.
+const lines = [];
+lines.push("'use client';");
+lines.push("import { useState, useEffect } from 'react';");
+lines.push("import { useAccount, useSendTransaction } from 'wagmi';");
+lines.push("import { parseUnits } from 'viem';");
+lines.push("");
+lines.push("type Tab = 'balance'|'bridge'|'send';");
+lines.push("");
+lines.push("export default function CircleAppKitPanel() {");
+lines.push("  const { address, isConnected } = useAccount();");
+lines.push("  const { sendTransactionAsync } = useSendTransaction();");
+lines.push("  const [tab, setTab] = useState<Tab>('balance');");
+lines.push("  const [mounted, setMounted] = useState(false);");
+lines.push("  const [loading, setLoading] = useState(false);");
+lines.push("  const [result, setResult] = useState('');");
+lines.push("  const [error, setError] = useState('');");
+lines.push("  const [sendForm, setSendForm] = useState({ amount:'', to:'' });");
+lines.push("");
+lines.push("  useEffect(() => setMounted(true), []);");
+lines.push("  if (!mounted || !isConnected) return null;");
+lines.push("");
+lines.push("  const handleSend = async () => {");
+lines.push("    if (!sendForm.amount || !sendForm.to) { setError('Fill in all fields'); return; }");
+lines.push("    if (!sendForm.to.startsWith('0x')) { setError('Invalid address'); return; }");
+lines.push("    setLoading(true); setError(''); setResult('');");
+lines.push("    try {");
+lines.push("      const hash = await sendTransactionAsync({");
+lines.push("        to: sendForm.to as `0x${string}`,");
+lines.push("        value: parseUnits(sendForm.amount, 18),");
+lines.push("      });");
+lines.push("      setResult('Sent! Tx: ' + hash);");
+lines.push("    } catch(e:any) {");
+lines.push("      setError(e?.message?.includes('rejected') ? 'Transaction rejected' : e?.message || 'Send failed');");
+lines.push("    } finally { setLoading(false); }");
+lines.push("  };");
+lines.push("");
+lines.push("  const tabs: { id: Tab; label: string; icon: string }[] = [");
+lines.push("    { id:'balance', label:'Unified Balance', icon:'💳' },");
+lines.push("    { id:'bridge', label:'Bridge USDC', icon:'🌉' },");
+lines.push("    { id:'send', label:'Send USDC', icon:'✈️' },");
+lines.push("  ];");
+lines.push("");
+lines.push("  return (");
+lines.push("    <div style={{ border:'1px solid rgba(212,176,90,0.2)', background:'linear-gradient(145deg,rgba(212,176,90,0.05),var(--bg2))', position:'relative', overflow:'hidden' }}>");
+lines.push("      <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:1, background:'linear-gradient(90deg,transparent,rgba(212,176,90,0.5),transparent)' }} />");
+lines.push("      {/* Header */}");
+lines.push("      <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--b1)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>");
+lines.push("        <div>");
+lines.push("          <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--a)', marginBottom:2 }}>Circle · App Kit</div>");
+lines.push("          <div style={{ fontFamily:\"'Cormorant',serif\", fontSize:18, fontWeight:300, color:'var(--w85)' }}>USDC Wallet</div>");
+lines.push("        </div>");
+lines.push("        <div style={{ display:'flex', alignItems:'center', gap:6, border:'1px solid var(--gr3)', background:'var(--gr2)', padding:'4px 10px' }}>");
+lines.push("          <div style={{ width:5, height:5, borderRadius:'50%', background:'var(--gr)', boxShadow:'0 0 6px var(--gr)' }} />");
+lines.push("          <span style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gr)' }}>Arc Testnet</span>");
+lines.push("        </div>");
+lines.push("      </div>");
+lines.push("      {/* Tabs */}");
+lines.push("      <div style={{ display:'flex', borderBottom:'1px solid var(--b1)' }}>");
+lines.push("        {tabs.map(t => (");
+lines.push("          <button key={t.id} onClick={() => { setTab(t.id); setError(''); setResult(''); }} style={{ flex:1, fontFamily:\"'DM Sans',sans-serif\", fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.12em', textTransform:'uppercase', padding:'10px 8px', background:'transparent', border:'none', borderBottom: tab===t.id ? '1px solid var(--a)' : '1px solid transparent', color: tab===t.id ? 'var(--a)' : 'var(--w18)', cursor:'pointer', transition:'all 0.2s' }}>");
+lines.push("            {t.icon}{' '}{t.label}");
+lines.push("          </button>))}");
+lines.push("      </div>");
+lines.push("      <div style={{ padding:'20px' }}>");
+lines.push("        {/* BALANCE TAB */}");
+lines.push("        {tab==='balance' && (");
+lines.push("          <div>");
+lines.push("            <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--w18)', marginBottom:4 }}>Connected Wallet</div>");
+lines.push("            <div style={{ fontFamily:\"'Cormorant',serif\", fontSize:13, fontWeight:300, color:'var(--a2)', marginBottom:16, wordBreak:'break-all' }}>{address}</div>");
+lines.push("            <div style={{ borderTop:'1px solid var(--b1)', paddingTop:14, marginBottom:14 }}>");
+lines.push("              {[{chain:'Arc Testnet',note:'Active · Native USDC'},{chain:'Ethereum Sepolia',note:'Bridge via CCTP'},{chain:'Solana Devnet',note:'Bridge via CCTP'}].map(c => (");
+lines.push("                <div key={c.chain} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>");
+lines.push("                  <div>");
+lines.push("                    <div style={{ fontSize:11, fontWeight:300, color:'var(--w60)', fontStyle:'italic' }}>{c.chain}</div>");
+lines.push("                    <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', color:'var(--w18)', letterSpacing:'0.08em' }}>{c.note}</div>");
+lines.push("                  </div>");
+lines.push("                  <div style={{ fontFamily:\"'Cormorant',serif\", fontSize:16, fontWeight:300, color:'var(--w18)' }}>— USDC</div>");
+lines.push("                </div>))}");
+lines.push("            </div>");
+lines.push("            <div style={{ fontSize:10, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:12 }}>Hold USDC across chains and spend on Vendra without bridging. Powered by Circle Gateway + CCTP.</div>");
+lines.push("            <a href='https://docs.arc.io/app-kit/unified-balance' target='_blank' rel='noopener noreferrer'><button className='btn-amber-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Read Unified Balance Docs ↗</button></a>");
+lines.push("          </div>)}");
+lines.push("        {/* BRIDGE TAB */}");
+lines.push("        {tab==='bridge' && (");
+lines.push("          <div>");
+lines.push("            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:20 }}>Bridge USDC from any supported chain to Arc Testnet via Circle CCTP. Use the Circle App Kit SDK to bridge programmatically.</div>");
+lines.push("            <div style={{ border:'1px solid var(--b1)', background:'var(--bg3)', padding:'16px 20px', marginBottom:16 }}>");
+lines.push("              <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--a)', marginBottom:10 }}>Supported Chains</div>");
+lines.push("              {['Ethereum Sepolia → Arc Testnet','Solana Devnet → Arc Testnet','Polygon Mumbai → Arc Testnet'].map(r => (");
+lines.push("                <div key={r} style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', padding:'6px 0', borderBottom:'1px solid var(--b1)' }}>{r}</div>))}");
+lines.push("            </div>");
+lines.push("            <div style={{ display:'flex', gap:8 }}>");
+lines.push("              <a href='https://docs.arc.io/app-kit/bridge' target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-amber-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Bridge Docs ↗</button></a>");
+lines.push("              <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Get Test USDC ↗</button></a>");
+lines.push("            </div>");
+lines.push("          </div>)}");
+lines.push("        {/* SEND TAB */}");
+lines.push("        {tab==='send' && (");
+lines.push("          <div>");
+lines.push("            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:16 }}>Send USDC to any address on Arc Testnet instantly.</div>");
+lines.push("            <div className='v-field'>");
+lines.push("              <label className='v-label'>Recipient Address</label>");
+lines.push("              <input className='v-input' type='text' placeholder='0x...' value={sendForm.to} onChange={e => setSendForm({...sendForm, to:e.target.value})} />");
+lines.push("            </div>");
+lines.push("            <div className='v-field'>");
+lines.push("              <label className='v-label'>Amount (USDC)</label>");
+lines.push("              <input className='v-input' type='number' placeholder='e.g. 5.00' value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount:e.target.value})} />");
+lines.push("            </div>");
+lines.push("            {error && <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--err)', marginBottom:10, border:'1px solid rgba(232,112,112,0.2)', padding:'8px 12px' }}>{error}</div>}");
+lines.push("            {result && <div style={{ fontSize:10, fontWeight:300, fontStyle:'italic', color:'var(--gr)', marginBottom:10, border:'1px solid var(--gr3)', padding:'8px 12px', wordBreak:'break-all' }}>{result}</div>}");
+lines.push("            <button onClick={handleSend} disabled={loading} className='btn-primary' style={{ width:'100%', padding:'12px', fontSize:10 }}>{loading ? 'Sending...' : 'Send USDC on Arc →'}</button>");
+lines.push("          </div>)}");
+lines.push("      </div>");
+lines.push("    </div>");
+lines.push("  );");
+lines.push("}");
+
+fs.writeFileSync('app/components/CircleAppKitPanel.tsx', lines.join('\n'), 'utf8');
+console.log('Fix 2+3 done — CircleAppKitPanel rewritten without broken adapter');
+console.log('All fixes applied!');

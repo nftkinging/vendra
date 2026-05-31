@@ -1,66 +1,38 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
-import { createViemAdapter } from '@circle-fin/adapter-viem-v2';
-import { AppKit } from '@circle-fin/app-kit';
+import { useAccount, useSendTransaction } from 'wagmi';
+import { parseUnits } from 'viem';
 
 type Tab = 'balance'|'bridge'|'send';
 
 export default function CircleAppKitPanel() {
   const { address, isConnected } = useAccount();
-  const { data: walletClient } = useWalletClient();
+  const { sendTransactionAsync } = useSendTransaction();
   const [tab, setTab] = useState<Tab>('balance');
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
-  const [bridgeForm, setBridgeForm] = useState({ amount:'', fromChain:'Ethereum_Sepolia', toChain:'Arc_Testnet' });
   const [sendForm, setSendForm] = useState({ amount:'', to:'' });
 
   useEffect(() => setMounted(true), []);
   if (!mounted || !isConnected) return null;
 
-  const getKit = () => {
-    if (!walletClient) throw new Error('Wallet not connected');
-    const adapter = createViemAdapter({ walletClient });
-    return { kit: new AppKit(), adapter };
-  };
-
-  const handleBridge = async () => {
-    if (!bridgeForm.amount) { setError('Enter an amount'); return; }
-    setLoading(true); setError(''); setResult('');
-    try {
-      const { kit, adapter } = getKit();
-      const res = await kit.bridge({
-        from: { adapter, chain: bridgeForm.fromChain as any },
-        to: { adapter, chain: bridgeForm.toChain as any },
-        amount: bridgeForm.amount,
-        token: 'USDC',
-      });
-      setResult('Bridge initiated! Tx: ' + JSON.stringify(res).slice(0,80));
-    } catch(e:any) {
-      setError(e?.message||'Bridge failed');
-    } finally { setLoading(false); }
-  };
-
   const handleSend = async () => {
     if (!sendForm.amount || !sendForm.to) { setError('Fill in all fields'); return; }
+    if (!sendForm.to.startsWith('0x')) { setError('Invalid address'); return; }
     setLoading(true); setError(''); setResult('');
     try {
-      const { kit, adapter } = getKit();
-      const res = await kit.send({
-        from: { adapter, chain: 'Arc_Testnet' as any },
-        to: { address: sendForm.to as `0x${string}`, chain: 'Arc_Testnet' as any },
-        amount: sendForm.amount,
-        token: 'USDC',
+      const hash = await sendTransactionAsync({
+        to: sendForm.to as `0x${string}`,
+        value: parseUnits(sendForm.amount, 18),
       });
-      setResult('Sent! Tx: ' + JSON.stringify(res).slice(0,80));
+      setResult('Sent! Tx: ' + hash);
     } catch(e:any) {
-      setError(e?.message||'Send failed');
+      setError(e?.message?.includes('rejected') ? 'Transaction rejected' : e?.message || 'Send failed');
     } finally { setLoading(false); }
   };
 
-  const CHAINS = ['Arc_Testnet','Ethereum_Sepolia','Solana_Devnet'];
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id:'balance', label:'Unified Balance', icon:'💳' },
     { id:'bridge', label:'Bridge USDC', icon:'🌉' },
@@ -93,7 +65,7 @@ export default function CircleAppKitPanel() {
         {tab==='balance' && (
           <div>
             <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--w18)', marginBottom:4 }}>Connected Wallet</div>
-            <div style={{ fontFamily:"'Cormorant',serif", fontSize:14, fontWeight:300, color:'var(--a2)', marginBottom:16, wordBreak:'break-all' }}>{address}</div>
+            <div style={{ fontFamily:"'Cormorant',serif", fontSize:13, fontWeight:300, color:'var(--a2)', marginBottom:16, wordBreak:'break-all' }}>{address}</div>
             <div style={{ borderTop:'1px solid var(--b1)', paddingTop:14, marginBottom:14 }}>
               {[{chain:'Arc Testnet',note:'Active · Native USDC'},{chain:'Ethereum Sepolia',note:'Bridge via CCTP'},{chain:'Solana Devnet',note:'Bridge via CCTP'}].map(c => (
                 <div key={c.chain} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
@@ -104,39 +76,27 @@ export default function CircleAppKitPanel() {
                   <div style={{ fontFamily:"'Cormorant',serif", fontSize:16, fontWeight:300, color:'var(--w18)' }}>— USDC</div>
                 </div>))}
             </div>
-            <div style={{ fontSize:10, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:12 }}>Unified Balance lets you hold USDC across chains and spend on Vendra without manually bridging. Powered by Circle Gateway + CCTP.</div>
+            <div style={{ fontSize:10, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:12 }}>Hold USDC across chains and spend on Vendra without bridging. Powered by Circle Gateway + CCTP.</div>
             <a href='https://docs.arc.io/app-kit/unified-balance' target='_blank' rel='noopener noreferrer'><button className='btn-amber-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Read Unified Balance Docs ↗</button></a>
           </div>)}
         {/* BRIDGE TAB */}
         {tab==='bridge' && (
           <div>
-            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:16 }}>Bridge USDC from any supported chain to Arc Testnet via Circle CCTP.</div>
-            <div className='v-field'>
-              <label className='v-label'>Amount (USDC)</label>
-              <input className='v-input' type='number' placeholder='e.g. 10.00' value={bridgeForm.amount} onChange={e => setBridgeForm({...bridgeForm, amount:e.target.value})} />
+            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:20 }}>Bridge USDC from any supported chain to Arc Testnet via Circle CCTP. Use the Circle App Kit SDK to bridge programmatically.</div>
+            <div style={{ border:'1px solid var(--b1)', background:'var(--bg3)', padding:'16px 20px', marginBottom:16 }}>
+              <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--a)', marginBottom:10 }}>Supported Chains</div>
+              {['Ethereum Sepolia → Arc Testnet','Solana Devnet → Arc Testnet','Polygon Mumbai → Arc Testnet'].map(r => (
+                <div key={r} style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', padding:'6px 0', borderBottom:'1px solid var(--b1)' }}>{r}</div>))}
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
-              <div>
-                <label className='v-label'>From Chain</label>
-                <select className='v-input' value={bridgeForm.fromChain} onChange={e => setBridgeForm({...bridgeForm, fromChain:e.target.value})} style={{ cursor:'pointer' }}>
-                  {CHAINS.filter(c => c !== 'Arc_Testnet').map(c => <option key={c} value={c} style={{ background:'var(--bg2)' }}>{c.replace('_',' ')}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className='v-label'>To Chain</label>
-                <select className='v-input' value={bridgeForm.toChain} onChange={e => setBridgeForm({...bridgeForm, toChain:e.target.value})} style={{ cursor:'pointer' }}>
-                  {CHAINS.map(c => <option key={c} value={c} style={{ background:'var(--bg2)' }}>{c.replace('_',' ')}</option>)}
-                </select>
-              </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <a href='https://docs.arc.io/app-kit/bridge' target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-amber-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Bridge Docs ↗</button></a>
+              <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Get Test USDC ↗</button></a>
             </div>
-            {error && <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--err)', marginBottom:10, border:'1px solid rgba(232,112,112,0.2)', padding:'8px 12px' }}>{error}</div>}
-            {result && <div style={{ fontSize:10, fontWeight:300, fontStyle:'italic', color:'var(--gr)', marginBottom:10, border:'1px solid var(--gr3)', padding:'8px 12px', wordBreak:'break-all' }}>{result}</div>}
-            <button onClick={handleBridge} disabled={loading} className='btn-primary' style={{ width:'100%', padding:'12px', fontSize:10 }}>{loading ? 'Bridging...' : 'Bridge USDC via CCTP →'}</button>
           </div>)}
         {/* SEND TAB */}
         {tab==='send' && (
           <div>
-            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:16 }}>Send USDC to any address on Arc Testnet.</div>
+            <div style={{ fontSize:11, fontWeight:300, fontStyle:'italic', color:'var(--w35)', lineHeight:1.7, marginBottom:16 }}>Send USDC to any address on Arc Testnet instantly.</div>
             <div className='v-field'>
               <label className='v-label'>Recipient Address</label>
               <input className='v-input' type='text' placeholder='0x...' value={sendForm.to} onChange={e => setSendForm({...sendForm, to:e.target.value})} />
