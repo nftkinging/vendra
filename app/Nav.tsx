@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
 import CartButton from './components/CartButton';
 import CartDrawer from './components/CartDrawer';
+import AppKitWidget from './components/AppKitWidget';
 
 type CircleStep = 'email'|'checking'|'found'|'notfound'|'creating'|'done';
 type CircleWallet = { address: string; walletId: string; email: string };
@@ -244,6 +245,7 @@ export default function Nav() {
             <button className='btn-faucet'>💧 Faucet</button>
           </a>
           <CartButton />
+          {isConnected && <AppKitWidget />}
           {isConnected
             ? <ConnectButton accountStatus='address' chainStatus='none' showBalance={false} />
             : circleWallet
