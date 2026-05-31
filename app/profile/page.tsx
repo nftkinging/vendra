@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import ArcUnifiedBalance from '../components/ArcUnifiedBalance';
 import ArcIdentityBadge from '../components/ArcIdentityBadge';
 import ArcAgenticBanner from '../components/ArcAgenticBanner';
+import CircleAppKitPanel from '../components/CircleAppKitPanel';
 
 export default function Profile() {
   const { address, isConnected } = useAccount();
@@ -127,8 +128,8 @@ export default function Profile() {
                     :sellerOrders.slice(0,3).map((o:any)=>(<div key={o.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}><div style={{width:32,height:32,background:'var(--a5)',border:'1px solid rgba(212,176,90,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,flexShrink:0}}>{'📦'}</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:300,color:'var(--w60)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.product_name}</div><div style={{fontSize:9,fontWeight:300,fontStyle:'italic',color:'var(--w18)'}}>{new Date(o.created_at).toLocaleDateString()}</div></div><div style={{fontFamily:"'Cormorant',serif",fontSize:13,fontWeight:300,color:'var(--gr)',flexShrink:0}}>{'+'}{Number(o.amount).toFixed(0)}</div></div>))}
                   </div>
                 </div>
-                {/* Arc Unified Balance */}
-                <ArcUnifiedBalance />
+                {/* Circle App Kit Panel */}
+                <CircleAppKitPanel />
               </div>
             </div>
             {/* Arc Agentic Banner */}
@@ -148,8 +149,8 @@ export default function Profile() {
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1px',background:'var(--b1)',marginBottom:32}}>
               {[{val:'$'+totalSpent.toFixed(2),label:'Total Spent',c:'var(--sl)'},{val:String(buyerOrders.length),label:'Orders',c:'var(--w)'},{val:'Arc Testnet',label:'Network',c:'var(--w)'}].map(s=>(<div key={s.label} className='v-profile-stat'><div className='v-profile-stat-val' style={{color:s.c}}>{s.val}</div><div className='v-profile-stat-label'>{s.label}</div></div>))}
             </div>
-            {/* Arc Unified Balance for buyers */}
-            <div style={{marginBottom:32}}><ArcUnifiedBalance /></div>
+            {/* Circle App Kit Panel */}
+            <div style={{marginBottom:32}}><CircleAppKitPanel /></div>
             <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Order History</span></div>
             <div style={{border:'1px solid var(--b1)',marginBottom:32}}>
               {buyerOrders.length===0?<div style={{padding:32,textAlign:'center',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em'}}>No orders yet — <Link href='/marketplace' style={{color:'var(--a)'}}>explore the marketplace</Link></div>
