@@ -4,194 +4,109 @@ import { useState, useRef, Suspense } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveProfile, uploadAvatar } from '../lib/supabase';
+import Link from 'next/link';
 
 function OnboardingContent() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const presetRole = searchParams.get('role');
-
-  const [step, setStep] = useState<'choose' | 'seller' | 'buyer'>(
-    presetRole === 'seller' ? 'seller' : presetRole === 'buyer' ? 'buyer' : 'choose'
-  );
-  const [form, setForm] = useState({ name: '', bio: '', category: '', xHandle: '' });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const params = useSearchParams();
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const [role, setRole] = useState<'buyer'|'seller'>(params.get('role')==='seller'?'seller':'buyer');
+  const [step, setStep] = useState<'role'|'profile'|'done'>('role');
+  const [form, setForm] = useState({ display_name:'', bio:'', x_handle:'' });
+  const [avatarFile, setAvatarFile] = useState<File|null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  const short = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
-  const initials = form.name ? form.name.slice(0, 2).toUpperCase() : address ? address.slice(2, 4).toUpperCase() : 'VN';
-  const isSeller = step === 'seller';
-  const accentColor = isSeller ? 'var(--accent)' : '#7c3aed';
-  const accentLight = isSeller ? 'var(--accent)' : '#a78bfa';
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+  const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    setAvatarFile(f); setAvatarPreview(URL.createObjectURL(f));
   };
 
-  const handleSubmit = async () => {
-    if (!address) { setError('Please connect your wallet first'); return; }
-    if (!form.name) { setError('Please enter a display name'); return; }
-    setLoading(true);
-    setError('');
+  const handleSave = async () => {
+    if (!address||!isConnected) { setError('Please connect your wallet'); return; }
+    if (!form.display_name) { setError('Display name is required'); return; }
+    setLoading(true); setError('');
     try {
-      let avatarUrl = '';
-      if (avatarFile) avatarUrl = await uploadAvatar(address, avatarFile);
-      await saveProfile({
-        wallet_address: address,
-        role: isSeller ? 'seller' : 'buyer',
-        display_name: form.name,
-        bio: form.bio,
-        avatar_url: avatarUrl,
-        category: form.category,
-        x_handle: form.xHandle,
-      });
-      router.push('/profile');
-    } catch (e) {
-      setError('Something went wrong. Please try again.');
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+      let avatar_url = '';
+      if (avatarFile) avatar_url = await uploadAvatar(address, avatarFile);
+      await saveProfile({ wallet_address:address, role, display_name:form.display_name, bio:form.bio, avatar_url, x_handle:form.x_handle });
+      setStep('done');
+    } catch(e:any) { setError(e?.message||'Something went wrong'); }
+    finally { setLoading(false); }
   };
-
-  const inputStyle = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '0.6rem 0', color: 'var(--ink)', fontFamily: "'Barlow', sans-serif", fontSize: '0.95rem', outline: 'none' };
-  const labelStyle = { display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: '0.4rem' };
-  const blockHeadStyle = { padding: '0.65rem 1.25rem', borderBottom: '1px solid var(--border)', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' as const, background: 'var(--bg3)' };
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <main style={{minHeight:'100vh',background:'var(--bg)'}}>
       <Nav />
-
-      {step === 'choose' && (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 2rem 3rem', background: 'radial-gradient(ellipse at 25% 60%, rgba(201,77,122,0.1), transparent 55%), radial-gradient(ellipse at 75% 40%, rgba(124,58,237,0.1), transparent 55%)' }}>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--accent)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.75rem', textAlign: 'center' }}>Welcome to Vendra</div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.5rem,6vw,4rem)', textAlign: 'center', letterSpacing: '0.02em', marginBottom: '0.5rem' }}>How do you want<br />to use Vendra?</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--muted)', textAlign: 'center', fontWeight: 300, marginBottom: '3rem' }}>Choose your path — you can always add the other role later</div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1px', width: '100%', maxWidth: 860, background: 'var(--border)' }}>
-            {[
-              { id: 'seller', icon: '🏪', label: 'For creators & businesses', title: 'I want to Sell', color: 'var(--accent)', desc: 'Launch your store, list products, and get paid instantly in USDC with zero platform fees.', features: ['Store creation & management', 'Product listings & inventory', 'Real-time earnings dashboard', 'Instant USDC settlement'], cta: 'Launch My Store →' },
-              { id: 'buyer', icon: '🛍️', label: 'For shoppers & collectors', title: 'I want to Shop', color: '#7c3aed', desc: 'Discover unique stores, buy physical goods, digital files and services — all in USDC.', features: ['Browse the full marketplace', 'Order history & tracking', 'Wishlist & saved stores', 'Spending summary'], cta: 'Start Shopping →' },
-            ].map(p => (
-              <div key={p.id} onClick={() => { setStep(p.id as 'seller' | 'buyer'); }} style={{ padding: '2.5rem', background: 'var(--bg2)', cursor: 'pointer', borderTop: '2px solid transparent', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.borderTopColor = p.color; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.borderTopColor = 'transparent'; }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1.25rem' }}>{p.icon}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{p.label}</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem', letterSpacing: '0.03em', marginBottom: '0.75rem' }}>{p.title}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 300, marginBottom: '1.5rem' }}>{p.desc}</div>
-                {p.features.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.05em' }}>{f}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop: '2rem', background: p.color, color: '#fff', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>{p.cta}</div>
+      <div style={{maxWidth:560,margin:'0 auto',padding:'120px 56px 80px'}}>
+        {step==='role'&&(
+          <>
+            <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Welcome to Vendra</span></div>
+            <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(36px,5vw,62px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:12}}>How will you<br/><em style={{fontStyle:'italic',background:'linear-gradient(120deg,var(--a),var(--a2))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>use Vendra?</em></h1>
+            <p style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:40,lineHeight:1.7}}>You can always add both roles later from your profile.</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1px',background:'var(--b1)',marginBottom:32}}>
+              <div onClick={()=>setRole('buyer')} style={{background:role==='buyer'?'rgba(212,176,90,0.08)':'var(--bg2)',padding:'32px 24px',cursor:'pointer',borderBottom:role==='buyer'?'1px solid var(--a)':'1px solid transparent',transition:'all 0.2s'}}>
+                <div style={{fontSize:'2rem',marginBottom:12}}>{'🛍️'}</div>
+                <div style={{fontFamily:"'Cormorant',serif",fontSize:22,fontWeight:300,color:role==='buyer'?'var(--a2)':'var(--w)',marginBottom:8}}>I want to buy</div>
+                <div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7}}>Browse stores, discover products, pay instantly in USDC on Arc.</div>
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop: '1.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textAlign: 'center' }}>
-            Want both?{' '}<span style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setStep('seller')}>Set up both roles →</span>
-          </div>
-        </div>
-      )}
-
-      {(step === 'seller' || step === 'buyer') && (
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '7rem 2rem 4rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: `1px solid ${accentColor}`, padding: '0.25rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: accentLight, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              {isSeller ? '🏪 Seller Account' : '🛍️ Buyer Account'}
+              <div onClick={()=>setRole('seller')} style={{background:role==='seller'?'rgba(212,176,90,0.08)':'var(--bg2)',padding:'32px 24px',cursor:'pointer',borderBottom:role==='seller'?'1px solid var(--a)':'1px solid transparent',transition:'all 0.2s'}}>
+                <div style={{fontSize:'2rem',marginBottom:12}}>{'🏪'}</div>
+                <div style={{fontFamily:"'Cormorant',serif",fontSize:22,fontWeight:300,color:role==='seller'?'var(--a2)':'var(--w)',marginBottom:8}}>I want to sell</div>
+                <div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7}}>Launch a store, list products, get paid directly in USDC. Zero fees.</div>
+              </div>
             </div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', letterSpacing: '0.02em', marginBottom: '0.5rem' }}>
-              {isSeller ? 'SELLER PROFILE' : 'BUYER PROFILE'}
+            <button onClick={()=>setStep('profile')} className='btn-primary' style={{width:'100%',padding:'18px',fontSize:12}}>{'Continue as '}{role==='buyer'?'Buyer':'Seller'}{' →'}</button>
+          </>
+        )}
+        {step==='profile'&&(
+          <>
+            <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>{role==='seller'?'Seller':'Buyer'}{' Profile'}</span></div>
+            <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(36px,5vw,62px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:32}}>Set up your<br/><em style={{fontStyle:'italic',background:'linear-gradient(120deg,var(--a),var(--a2))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>profile</em></h1>
+            <div style={{marginBottom:28,display:'flex',alignItems:'center',gap:20}}>
+              <div onClick={()=>avatarRef.current?.click()} style={{width:72,height:72,borderRadius:'50%',border:'1px dashed var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',transition:'border-color 0.35s',background:'var(--bg2)',flexShrink:0}} onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--a)')} onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--b2)')}>
+                {avatarPreview?<img src={avatarPreview} alt='avatar' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{textAlign:'center'}}><div style={{fontSize:'1.5rem'}}>{'📷'}</div><div style={{fontSize:8,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',marginTop:4}}>Photo</div></div>}
+              </div>
+              <input ref={avatarRef} type='file' accept='image/*' onChange={handleAvatar} style={{display:'none'}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',marginBottom:4}}>Profile photo</div>
+                <div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.6}}>Click the circle to upload. Optional but recommended.</div>
+              </div>
             </div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 300 }}>
-              {isSeller ? 'Tell buyers who you are — takes 60 seconds' : 'Personalize your shopping experience'}
+            <div style={{border:'1px solid var(--b1)',marginBottom:24}}>
+              <div className='v-block-head'>Profile Info</div>
+              <div style={{padding:20}}>
+                <div className='v-field'><label className='v-label'>Display name *</label><input className='v-input' placeholder='Your name or handle' value={form.display_name} onChange={e=>setForm({...form,display_name:e.target.value})}/></div>
+                <div className='v-field'><label className='v-label'>Bio</label><textarea className='v-textarea' placeholder='Tell the Vendra community about yourself...' value={form.bio} onChange={e=>setForm({...form,bio:e.target.value})}/></div>
+                <div className='v-field' style={{marginBottom:0}}><label className='v-label'>X (Twitter) handle</label><input className='v-input' placeholder='@yourhandle' value={form.x_handle} onChange={e=>setForm({...form,x_handle:e.target.value})}/></div>
+              </div>
             </div>
-          </div>
-
-          <div style={{ border: '1px solid var(--border)', marginBottom: '1rem' }}>
-            <div style={blockHeadStyle}>Your identity</div>
-            <div style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                <div onClick={() => fileRef.current?.click()} style={{ width: 72, height: 72, borderRadius: '50%', background: isSeller ? 'linear-gradient(135deg, var(--accent), #7c3aed)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--border2)' }}>
-                  {avatarPreview ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{initials}</span>}
-                </div>
-                <div>
-                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.06em', lineHeight: 1.6, marginBottom: '0.5rem' }}>
-                    {avatarPreview ? 'Looking good! Click to change' : 'Auto-generated from wallet'}
-                  </div>
-                  <button onClick={() => fileRef.current?.click()} style={{ background: 'transparent', border: `1px solid ${accentColor}`, color: accentLight, padding: '0.35rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                    Upload Photo
-                  </button>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={labelStyle}>Display name *</label>
-                <input type="text" placeholder={isSeller ? 'e.g. Kwame Ventures' : 'e.g. Kwame'} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={labelStyle}>Bio</label>
-                <input type="text" placeholder={isSeller ? 'What do you sell? Where are you based?' : 'A little about yourself...'} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={labelStyle}>X (Twitter) handle</label>
-                <input type="text" placeholder="@yourhandle" value={form.xHandle} onChange={e => setForm({ ...form, xHandle: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Connected wallet</label>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', color: accentLight, padding: '0.6rem 0', borderBottom: '1px solid var(--border)' }}>
-                  {short} · Arc Testnet
-                </div>
-              </div>
+            <div style={{border:'1px solid var(--b1)',padding:'14px 18px',marginBottom:24,display:'flex',alignItems:'center',gap:10}}>
+              <div className='v-arc-badge-dot'/>
+              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7}}>Your profile is linked to your wallet via ERC-8004 onchain identity.</div>
+            </div>
+            {error&&<div style={{border:'1px solid rgba(232,112,112,0.3)',background:'rgba(232,112,112,0.08)',padding:'10px 16px',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--err)',marginBottom:16}}>{error}</div>}
+            <button onClick={handleSave} disabled={loading} className='btn-primary' style={{width:'100%',padding:'18px',fontSize:12}}>{loading?'Saving...':'Create Profile →'}</button>
+            <div style={{textAlign:'center',marginTop:12}}><button onClick={()=>setStep('role')} style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',background:'transparent',border:'none',cursor:'pointer'}}>← Back</button></div>
+          </>
+        )}
+        {step==='done'&&(
+          <div style={{textAlign:'center'}}>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'5rem',fontWeight:300,color:'var(--a2)',lineHeight:1,marginBottom:16}}>✓</div>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,color:'var(--w)',marginBottom:12}}>Profile Created</div>
+            <div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:40,lineHeight:1.7}}>Welcome to Vendra, {form.display_name}.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:260,margin:'0 auto'}}>
+              {role==='seller'?(<><Link href='/store/create'><button className='btn-primary' style={{width:'100%',padding:'14px',fontSize:10}}>Create My Store →</button></Link><Link href='/marketplace'><button className='btn-ghost' style={{width:'100%',padding:'14px',fontSize:10}}>Explore First</button></Link></>):(<><Link href='/marketplace'><button className='btn-primary' style={{width:'100%',padding:'14px',fontSize:10}}>Browse Marketplace →</button></Link><Link href='/profile'><button className='btn-ghost' style={{width:'100%',padding:'14px',fontSize:10}}>View Profile</button></Link></>)}
             </div>
           </div>
-
-          {!isSeller && (
-            <div style={{ border: '1px solid var(--border)', marginBottom: '1rem' }}>
-              <div style={blockHeadStyle}>Shopping preferences</div>
-              <div style={{ padding: '1.25rem' }}>
-                <label style={labelStyle}>Interested in</label>
-                <input type="text" placeholder="e.g. Fashion, Digital, Art..." value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} style={inputStyle} />
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div style={{ border: '1px solid rgba(232,80,80,0.3)', background: 'rgba(232,80,80,0.08)', padding: '0.75rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: '#e85050', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
-
-          <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', background: loading ? 'var(--muted)' : accentColor, color: '#fff', border: 'none', padding: '1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.15em', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}>
-            {loading ? 'Saving...' : `Create ${isSeller ? 'Seller' : 'Buyer'} Profile →`}
-          </button>
-
-          <div style={{ textAlign: 'center', marginTop: '1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em' }}>
-            <span style={{ cursor: 'pointer' }} onClick={() => setStep('choose')}>← Back</span>
-            {' · or '}
-            <span style={{ color: accentLight, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setStep(isSeller ? 'buyer' : 'seller')}>
-              set up as {isSeller ? 'buyer' : 'seller'} instead
-            </span>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }
 
 export default function Onboarding() {
-  return (
-    <Suspense>
-      <OnboardingContent />
-    </Suspense>
-  );
+  return <Suspense><OnboardingContent /></Suspense>;
 }

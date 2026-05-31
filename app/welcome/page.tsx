@@ -2,89 +2,43 @@
 import Nav from '../Nav';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
-import { useEffect, useState } from 'react';
-import { getAllProfiles, getStoreByWallet } from '../lib/supabase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Welcome() {
-  const { address } = useAccount();
-  const [sellerProfile, setSellerProfile] = useState<any>(null);
-  const [buyerProfile, setBuyerProfile] = useState<any>(null);
-  const [store, setStore] = useState<any>(null);
-
-  useEffect(() => {
-    if (!address) return;
-    const load = async () => {
-      const profiles = await getAllProfiles(address);
-      setSellerProfile(profiles.find((p: any) => p.role === 'seller') || null);
-      setBuyerProfile(profiles.find((p: any) => p.role === 'buyer') || null);
-      setStore(await getStoreByWallet(address));
-    };
-    load();
-  }, [address]);
-
-  const displayName = () => {
-    if (sellerProfile && store) return `${sellerProfile.display_name}, owner at ${store.name}`;
-    if (sellerProfile) return sellerProfile.display_name;
-    if (buyerProfile) return buyerProfile.display_name;
-    return 'Vendra User';
-  };
-
-  const avatar = sellerProfile?.avatar_url || buyerProfile?.avatar_url;
-  const initials = (sellerProfile?.display_name || buyerProfile?.display_name || 'VN').slice(0, 2).toUpperCase();
-
+  const { isConnected } = useAccount();
+  const router = useRouter();
+  useEffect(() => { if (!isConnected) router.push('/join'); }, [isConnected, router]);
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden'}}>
       <Nav />
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '6rem 2rem 3rem',
-        background: 'radial-gradient(ellipse at 30% 50%, rgba(201,77,122,0.1), transparent 55%), radial-gradient(ellipse at 70% 40%, rgba(124,58,237,0.1), transparent 55%)'
-      }}>
-        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', marginBottom: '1.5rem', overflow: 'hidden', border: '2px solid var(--border2)' }}>
-          {avatar ? <img src={avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </div>
-
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--accent)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.75rem', textAlign: 'center' }}>Welcome back</div>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(1.8rem,4vw,3rem)', textAlign: 'center', letterSpacing: '0.02em', marginBottom: '0.5rem', maxWidth: 700 }}>
-          Hey, {displayName()}!
-        </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--muted)', textAlign: 'center', fontWeight: 300, marginBottom: '3rem', maxWidth: 400 }}>
-          You&apos;re all set up on Vendra. What would you like to do today?
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1px', width: '100%', maxWidth: 700, background: 'var(--border)' }}>
-          <Link href="/marketplace" style={{ textDecoration: 'none' }}>
-            <div style={{ padding: '2.5rem', background: 'var(--bg2)', cursor: 'pointer', borderTop: '2px solid transparent', transition: 'all 0.2s', height: '100%' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.borderTopColor = '#7c3aed'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.borderTopColor = 'transparent'; }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛍️</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.03em', marginBottom: '0.5rem' }}>Continue Shopping</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 300, marginBottom: '1.5rem' }}>Browse the marketplace, discover new stores and buy products with USDC.</div>
-              <div style={{ background: '#7c3aed', color: '#fff', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>Go to Marketplace →</div>
+      <div style={{position:'absolute',inset:0,pointerEvents:'none'}}>
+        <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-60%)',width:800,height:600,background:'radial-gradient(ellipse at center,rgba(212,176,90,0.08) 0%,transparent 70%)'}}/>
+        <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(212,176,90,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,90,0.018) 1px,transparent 1px)',backgroundSize:'96px 96px'}}/>
+      </div>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:560,padding:'0 40px'}}>
+        <div className='v-arc-badge' style={{marginBottom:32,display:'inline-flex'}}><div className='v-arc-badge-dot'/><span className='v-arc-badge-text'>Welcome back</span></div>
+        <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(40px,7vw,88px)',fontWeight:300,lineHeight:0.90,letterSpacing:'-0.01em',color:'var(--w)',marginBottom:24}}>
+          What would you<br/><em style={{fontStyle:'italic',background:'linear-gradient(120deg,var(--a),var(--a2),var(--a3))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>like to do?</em>
+        </h1>
+        <p style={{fontSize:14,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.8,marginBottom:48}}>You have both a buyer and seller profile. Choose your path.</p>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1px',background:'var(--b1)',maxWidth:400,margin:'0 auto 32px'}}>
+          <Link href='/marketplace' style={{textDecoration:'none'}}>
+            <div style={{background:'var(--bg2)',padding:'32px 20px',cursor:'pointer',transition:'background 0.2s',textAlign:'center'}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,176,90,0.08)')} onMouseLeave={e=>(e.currentTarget.style.background='var(--bg2)')}>
+              <div style={{fontSize:'2rem',marginBottom:12}}>{'🛍️'}</div>
+              <div style={{fontFamily:"'Cormorant',serif",fontSize:20,fontWeight:300,color:'var(--w)',marginBottom:6}}>Shop</div>
+              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.6}}>Browse stores & buy products</div>
             </div>
           </Link>
-
-          <Link href={store ? `/store/${store.slug}` : '/store/create'} style={{ textDecoration: 'none' }}>
-            <div style={{ padding: '2.5rem', background: 'var(--bg2)', cursor: 'pointer', borderTop: '2px solid transparent', transition: 'all 0.2s', height: '100%' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.borderTopColor = 'var(--accent)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.borderTopColor = 'transparent'; }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏪</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.03em', marginBottom: '0.5rem' }}>
-                {store ? 'Manage My Store' : 'Create My Store'}
-              </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 300, marginBottom: '1.5rem' }}>
-                {store ? `${store.name} — view products, track sales and manage your storefront.` : 'Launch your store and start selling on Arc Testnet instantly.'}
-              </div>
-              <div style={{ background: 'var(--accent)', color: '#fff', padding: '0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>
-                {store ? 'Go to My Store →' : 'Create Store →'}
-              </div>
+          <Link href='/profile' style={{textDecoration:'none'}}>
+            <div style={{background:'var(--bg2)',padding:'32px 20px',cursor:'pointer',transition:'background 0.2s',textAlign:'center'}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,176,90,0.08)')} onMouseLeave={e=>(e.currentTarget.style.background='var(--bg2)')}>
+              <div style={{fontSize:'2rem',marginBottom:12}}>{'🏪'}</div>
+              <div style={{fontFamily:"'Cormorant',serif",fontSize:20,fontWeight:300,color:'var(--w)',marginBottom:6}}>Sell</div>
+              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.6}}>Manage your store & products</div>
             </div>
           </Link>
         </div>
-
-        <Link href="/profile" style={{ marginTop: '1.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textDecoration: 'none' }}>
-          View full profile →
-        </Link>
+        <Link href='/profile' style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.12em',textDecoration:'none'}}>View full profile →</Link>
       </div>
     </main>
   );

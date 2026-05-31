@@ -1,94 +1,32 @@
 'use client';
-import { useEffect } from 'react';
+import Nav from '../Nav';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Join() {
   const { isConnected } = useAccount();
   const router = useRouter();
-
-  useEffect(() => {
-    if (isConnected) {
-      router.push('/');
-    }
-  }, [isConnected, router]);
-
+  useEffect(() => { if (isConnected) router.push('/onboarding'); }, [isConnected, router]);
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-      background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.15), transparent 70%), radial-gradient(ellipse at 80% 20%, rgba(201,77,122,0.1), transparent 50%), var(--bg)'
-    }}>
-      {[
-        { top: '10%', left: '15%', size: 2, opacity: 0.5 },
-        { top: '20%', left: '70%', size: 1, opacity: 0.4 },
-        { top: '70%', left: '20%', size: 2, opacity: 0.3 },
-        { top: '80%', left: '75%', size: 1, opacity: 0.5 },
-        { top: '40%', left: '90%', size: 2, opacity: 0.4 },
-        { top: '60%', left: '5%', size: 1, opacity: 0.6 },
-      ].map((s, i) => (
-        <div key={i} style={{ position: 'fixed', top: s.top, left: s.left, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', opacity: s.opacity, pointerEvents: 'none' }} />
-      ))}
-
-      <div style={{ textAlign: 'center', maxWidth: 480, width: '100%' }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem', letterSpacing: '0.08em', marginBottom: '2.5rem', color: 'var(--ink)' }}>
-          VEND<span style={{ color: 'var(--accent)' }}>R</span>A
+    <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden'}}>
+      <Nav />
+      <div style={{position:'absolute',inset:0,pointerEvents:'none'}}>
+        <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-60%)',width:800,height:600,background:'radial-gradient(ellipse at center,rgba(212,176,90,0.08) 0%,transparent 70%)'}}/>
+        <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(212,176,90,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,90,0.018) 1px,transparent 1px)',backgroundSize:'96px 96px'}}/>
+      </div>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:520,padding:'0 40px'}}>
+        <div className='v-arc-badge' style={{marginBottom:32,display:'inline-flex'}}><div className='v-arc-badge-dot'/><span className='v-arc-badge-text'>Arc Testnet · Powered by USDC</span></div>
+        <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(48px,8vw,96px)',fontWeight:300,lineHeight:0.90,letterSpacing:'-0.01em',color:'var(--w)',marginBottom:24}}>
+          Connect your<br/><em style={{fontStyle:'italic',background:'linear-gradient(120deg,var(--a),var(--a2),var(--a3))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>wallet</em>
+        </h1>
+        <p style={{fontSize:14,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.8,marginBottom:40}}>Your wallet is your identity on Vendra. No email. No password. Just your keys.</p>
+        <div style={{display:'flex',justifyContent:'center',marginBottom:20}}>
+          <ConnectButton label='Connect Wallet' accountStatus='address' chainStatus='none' showBalance={false} />
         </div>
-
-        <div style={{ width: 100, height: 100, margin: '0 auto 2.5rem' }}>
-          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-            <defs>
-              <radialGradient id="jg1" cx="35%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
-                <stop offset="40%" stopColor="rgba(201,77,122,0.25)" />
-                <stop offset="100%" stopColor="rgba(124,58,237,0.1)" />
-              </radialGradient>
-              <filter id="jblur"><feGaussianBlur stdDeviation="10" /></filter>
-            </defs>
-            <ellipse cx="200" cy="210" rx="140" ry="130" fill="rgba(124,58,237,0.15)" filter="url(#jblur)" />
-            <polygon points="200,60 340,140 340,280 200,360 60,280 60,140" fill="url(#jg1)" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-            <line x1="140" y1="120" x2="280" y2="290" stroke="rgba(201,77,122,0.6)" strokeWidth="1.5" />
-            <line x1="240" y1="80" x2="100" y2="300" stroke="rgba(124,58,237,0.4)" strokeWidth="1" />
-          </svg>
-        </div>
-
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem,5vw,3rem)', letterSpacing: '0.02em', marginBottom: '0.75rem', color: 'var(--ink)' }}>
-          JOIN VENDRA
-        </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 300, lineHeight: 1.7, marginBottom: '2.5rem' }}>
-          Connect your wallet to start buying and selling on Arc Testnet. No sign-up form, no email — just your wallet.
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <ConnectButton
-            label="Connect Wallet to Join"
-            accountStatus="address"
-            chainStatus="none"
-            showBalance={false}
-          />
-        </div>
-
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '2rem' }}>
-          Powered by Arc Testnet · 0% fees
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-          {['Zero platform fees', 'Instant USDC settlement', 'Sell anything globally'].map(f => (
-            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', color: 'var(--muted)', letterSpacing: '0.05em' }}>{f}</span>
-            </div>
-          ))}
-        </div>
-
-        <a href="/" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', textDecoration: 'none' }}>
-          ← Back to home
-        </a>
+        <Link href='/marketplace' style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.12em',textDecoration:'none'}}>← Browse without connecting</Link>
       </div>
     </main>
   );

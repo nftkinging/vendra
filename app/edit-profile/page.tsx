@@ -1,225 +1,78 @@
 'use client';
 import Nav from '../Nav';
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getAllProfiles, saveProfile, uploadAvatar } from '../lib/supabase';
+import { getProfile, saveProfile, uploadAvatar } from '../lib/supabase';
+import Link from 'next/link';
 
 function EditProfileContent() {
   const { address } = useAccount();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const defaultRole = searchParams.get('role') || 'seller';
-
-  const [activeRole, setActiveRole] = useState<'seller' | 'buyer'>(defaultRole as 'seller' | 'buyer');
-  const [hasSeller, setHasSeller] = useState(false);
-  const [hasBuyer, setHasBuyer] = useState(false);
-  const [form, setForm] = useState({ name: '', bio: '', category: '', xHandle: '' });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const params = useSearchParams();
+  const role = (params.get('role')||'buyer') as 'buyer'|'seller';
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({ display_name:'', bio:'', x_handle:'' });
+  const [avatarFile, setAvatarFile] = useState<File|null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
-  const [currentAvatar, setCurrentAvatar] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!address) return;
-    const load = async () => {
-      const profiles = await getAllProfiles(address);
-      const sp = profiles.find((p: any) => p.role === 'seller');
-      const bp = profiles.find((p: any) => p.role === 'buyer');
-      setHasSeller(!!sp);
-      setHasBuyer(!!bp);
-      const active = activeRole === 'seller' ? sp : bp;
-      if (active) {
-        setForm({
-          name: active.display_name || '',
-          bio: active.bio || '',
-          category: active.category || '',
-          xHandle: active.x_handle || '',
-        });
-        setCurrentAvatar(active.avatar_url || '');
-        setAvatarPreview(active.avatar_url || '');
-      }
+    getProfile(address, role).then(p => {
+      if (p) { setForm({ display_name:p.display_name||'', bio:p.bio||'', x_handle:p.x_handle||'' }); setAvatarPreview(p.avatar_url||''); }
       setLoading(false);
-    };
-    load();
-  }, [address, activeRole]);
-
-  const switchRole = async (role: 'seller' | 'buyer') => {
-    if (!address) return;
-    setActiveRole(role);
-    setLoading(true);
-    const profiles = await getAllProfiles(address);
-    const p = profiles.find((pr: any) => pr.role === role);
-    if (p) {
-      setForm({ name: p.display_name || '', bio: p.bio || '', category: p.category || '', xHandle: p.x_handle || '' });
-      setCurrentAvatar(p.avatar_url || '');
-      setAvatarPreview(p.avatar_url || '');
-    } else {
-      setForm({ name: '', bio: '', category: '', xHandle: '' });
-      setCurrentAvatar('');
-      setAvatarPreview('');
-    }
-    setLoading(false);
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-  };
+    });
+  }, [address, role]);
 
   const handleSave = async () => {
-    if (!address) { setError('Please connect your wallet'); return; }
-    if (!form.name) { setError('Display name is required'); return; }
-    setSaving(true);
-    setError('');
-    setSuccess('');
+    if (!address) return;
+    if (!form.display_name) { setError('Display name required'); return; }
+    setSaving(true); setError(''); setSuccess('');
     try {
-      let avatarUrl = currentAvatar;
-      if (avatarFile) avatarUrl = await uploadAvatar(address, avatarFile);
-      await saveProfile({
-        wallet_address: address,
-        role: activeRole,
-        display_name: form.name,
-        bio: form.bio,
-        avatar_url: avatarUrl,
-        category: form.category,
-        x_handle: form.xHandle,
-      });
-      setSuccess('Profile saved successfully!');
-      setTimeout(() => router.push('/profile'), 1500);
-    } catch (e) {
-      setError('Something went wrong. Please try again.');
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+      let avatar_url = avatarPreview;
+      if (avatarFile) avatar_url = await uploadAvatar(address, avatarFile);
+      await saveProfile({ wallet_address:address, role, display_name:form.display_name, bio:form.bio, avatar_url, x_handle:form.x_handle });
+      setSuccess('Profile updated!'); setTimeout(()=>setSuccess(''),2500);
+    } catch(e:any) { setError(e?.message||'Something went wrong'); }
+    finally { setSaving(false); }
   };
 
-  const isSeller = activeRole === 'seller';
-  const accentColor = isSeller ? 'var(--accent)' : '#7c3aed';
-  const accentLight = isSeller ? 'var(--accent)' : '#a78bfa';
-  const initials = form.name ? form.name.slice(0, 2).toUpperCase() : address?.slice(2, 4).toUpperCase() || 'VN';
-  const short = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
-
-  const inputStyle = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '0.6rem 0', color: 'var(--ink)', fontFamily: "'Barlow', sans-serif", fontSize: '0.95rem', outline: 'none' };
-  const labelStyle = { display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: '0.4rem' };
-  const blockHeadStyle = { padding: '0.65rem 1.25rem', borderBottom: '1px solid var(--border)', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' as const, background: 'var(--bg3)' };
-
-  if (loading) return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Nav />
-      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading profile...</div>
-    </main>
-  );
+  if (loading) return <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center'}}><Nav /><div className='v-spinner'/></main>;
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <main style={{minHeight:'100vh',background:'var(--bg)'}}>
       <Nav />
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '7rem 2rem 4rem' }}>
-
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', letterSpacing: '0.02em', marginBottom: '0.5rem' }}>EDIT PROFILE</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 300 }}>Update your info anytime</div>
+      <div style={{maxWidth:560,margin:'0 auto',padding:'120px 56px 80px'}}>
+        <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Edit {role==='seller'?'Seller':'Buyer'} Profile</span></div>
+        <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:32}}>Update your<br/><em style={{fontStyle:'italic',background:'linear-gradient(120deg,var(--a),var(--a2))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>profile</em></h1>
+        <div style={{marginBottom:28,display:'flex',alignItems:'center',gap:20}}>
+          <div onClick={()=>avatarRef.current?.click()} style={{width:72,height:72,borderRadius:'50%',border:'1px dashed var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',transition:'border-color 0.35s',background:'var(--bg2)',flexShrink:0}} onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--a)')} onMouseLeave={e=>(e.currentTarget.style.borderColor='var(--b2)')}>
+            {avatarPreview?<img src={avatarPreview} alt='avatar' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{textAlign:'center'}}><div style={{fontSize:'1.5rem'}}>{'📷'}</div><div style={{fontSize:8,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',marginTop:4}}>Change</div></div>}
+          </div>
+          <input ref={avatarRef} type='file' accept='image/*' onChange={e=>{const f=e.target.files?.[0];if(!f)return;setAvatarFile(f);setAvatarPreview(URL.createObjectURL(f));}} style={{display:'none'}}/>
+          <div style={{flex:1}}><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.6}}>Click to change your profile photo.</div></div>
         </div>
-
-        {/* Role switcher */}
-        {(hasSeller || hasBuyer) && (
-          <div style={{ display: 'flex', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-            {hasSeller && (
-              <button onClick={() => switchRole('seller')} style={{ flex: 1, fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.65rem', border: 'none', cursor: 'pointer', background: activeRole === 'seller' ? 'var(--accent)' : 'transparent', color: activeRole === 'seller' ? '#fff' : 'var(--muted)', transition: 'all 0.2s' }}>
-                🏪 Seller Profile
-              </button>
-            )}
-            {hasBuyer && (
-              <button onClick={() => switchRole('buyer')} style={{ flex: 1, fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.65rem', border: 'none', cursor: 'pointer', background: activeRole === 'buyer' ? '#7c3aed' : 'transparent', color: activeRole === 'buyer' ? '#fff' : 'var(--muted)', transition: 'all 0.2s' }}>
-                🛍️ Buyer Profile
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Identity block */}
-        <div style={{ border: '1px solid var(--border)', marginBottom: '1rem' }}>
-          <div style={blockHeadStyle}>
-            {isSeller ? '🏪 Seller Identity' : '🛍️ Buyer Identity'}
-          </div>
-          <div style={{ padding: '1.25rem' }}>
-            {/* Avatar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
-              <div onClick={() => fileRef.current?.click()} style={{ width: 72, height: 72, borderRadius: '50%', background: isSeller ? 'linear-gradient(135deg, var(--accent), #7c3aed)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--border2)' }}>
-                {avatarPreview ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{initials}</span>}
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.06em', lineHeight: 1.6, marginBottom: '0.5rem' }}>
-                  {avatarPreview && avatarPreview !== currentAvatar ? 'New photo selected' : avatarPreview ? 'Current photo' : 'No photo set'}
-                </div>
-                <button onClick={() => fileRef.current?.click()} style={{ background: 'transparent', border: `1px solid ${accentColor}`, color: accentLight, padding: '0.35rem 0.75rem', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                  {avatarPreview ? 'Change Photo' : 'Upload Photo'}
-                </button>
-                <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>Display name *</label>
-              <input type="text" placeholder={isSeller ? 'e.g. Kwame Ventures' : 'e.g. Kwame'} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>Bio</label>
-              <input type="text" placeholder={isSeller ? 'What do you sell? Where are you based?' : 'A little about yourself...'} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>X (Twitter) handle</label>
-              <input type="text" placeholder="@yourhandle" value={form.xHandle} onChange={e => setForm({ ...form, xHandle: e.target.value })} style={inputStyle} />
-            </div>
-            {!isSeller && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={labelStyle}>Interested in</label>
-                <input type="text" placeholder="e.g. Fashion, Digital, Art..." value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} style={inputStyle} />
-              </div>
-            )}
-            <div>
-              <label style={labelStyle}>Connected wallet</label>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', color: accentLight, padding: '0.6rem 0', borderBottom: '1px solid var(--border)' }}>
-                {short} · Arc Testnet
-              </div>
-            </div>
+        <div style={{border:'1px solid var(--b1)',marginBottom:24}}>
+          <div className='v-block-head'>Profile Info</div>
+          <div style={{padding:20}}>
+            <div className='v-field'><label className='v-label'>Display name *</label><input className='v-input' value={form.display_name} onChange={e=>setForm({...form,display_name:e.target.value})}/></div>
+            <div className='v-field'><label className='v-label'>Bio</label><textarea className='v-textarea' value={form.bio} onChange={e=>setForm({...form,bio:e.target.value})}/></div>
+            <div className='v-field' style={{marginBottom:0}}><label className='v-label'>X (Twitter) handle</label><input className='v-input' placeholder='@yourhandle' value={form.x_handle} onChange={e=>setForm({...form,x_handle:e.target.value})}/></div>
           </div>
         </div>
-
-        {error && (
-          <div style={{ border: '1px solid rgba(232,80,80,0.3)', background: 'rgba(232,80,80,0.08)', padding: '0.75rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: '#e85050', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-            {error}
-          </div>
-        )}
-        {success && (
-          <div style={{ border: '1px solid rgba(80,200,80,0.3)', background: 'rgba(80,200,80,0.08)', padding: '0.75rem 1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: '#50c850', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-            {success}
-          </div>
-        )}
-
-        <button onClick={handleSave} disabled={saving} style={{ width: '100%', background: saving ? 'var(--muted)' : accentColor, color: '#fff', border: 'none', padding: '1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.15em', cursor: saving ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}>
-          {saving ? 'Saving...' : 'Save Changes →'}
-        </button>
-
-        <div style={{ textAlign: 'center', marginTop: '1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.08em', cursor: 'pointer' }} onClick={() => router.push('/profile')}>
-          ← Back to Profile
-        </div>
+        {error&&<div style={{border:'1px solid rgba(232,112,112,0.3)',background:'rgba(232,112,112,0.08)',padding:'10px 16px',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--err)',marginBottom:16}}>{error}</div>}
+        {success&&<div style={{border:'1px solid rgba(143,196,152,0.3)',background:'rgba(143,196,152,0.08)',padding:'10px 16px',fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--gr)',marginBottom:16}}>{success}</div>}
+        <button onClick={handleSave} disabled={saving} className='btn-primary' style={{width:'100%',padding:'18px',fontSize:12}}>{saving?'Saving...':'Save Changes →'}</button>
+        <div style={{textAlign:'center',marginTop:16}}><Link href='/profile' style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',textDecoration:'none'}}>← Back to Profile</Link></div>
       </div>
     </main>
   );
 }
 
 export default function EditProfile() {
-  return (
-    <Suspense>
-      <EditProfileContent />
-    </Suspense>
-  );
+  return <Suspense><EditProfileContent /></Suspense>;
 }
