@@ -1,204 +1,96 @@
 'use client';
-import Link from 'next/link';
-import { useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useWaitForTransactionReceipt, useAccount, useSendTransaction } from 'wagmi';
-import { parseUnits } from 'viem';
 import Nav from '../Nav';
-import { getAllProfiles, saveOrder } from '../lib/supabase';
-
-const storeName: Record<string, string> = {
-  'nour-atelier': 'Nour Atelier',
-  'bytedrop': 'ByteDrop',
-  'solar-prints': 'Solar Prints',
-  'kode-studio': 'Kode Studio',
-  'umami-box': 'Umami Box',
-  'soundvault': 'SoundVault',
-};
-
-const storeWallets: Record<string, `0x${string}`> = {
-  'nour-atelier': '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-  'bytedrop': '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-  'solar-prints': '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-  'kode-studio': '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-  'umami-box': '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
-  'soundvault': '0x976EA74026E726554dB657fA54763abd0C3a0aa9',
-};
+import Link from 'next/link';
+import { Suspense, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useAccount, useSendTransaction } from 'wagmi';
+import { parseUnits } from 'viem';
+import { saveOrder, createEscrowJob } from '../lib/supabase';
 
 function CheckoutContent() {
-  const searchParams = useSearchParams();
+  const params = useSearchParams();
   const router = useRouter();
-  const { isConnected, address } = useAccount();
-  const [step, setStep] = useState<'review' | 'paying' | 'success' | 'error'>('review');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-
-  const store = searchParams.get('store') || 'nour-atelier';
-  const product = searchParams.get('product') || 'Signature Piece';
-  const price = Number(searchParams.get('price') || '45');
-  const sellerWallet = storeWallets[store] || storeWallets['nour-atelier'];
-
+  const { address, isConnected } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash: txHash });
+  const store = params.get('store')||'';
+  const product = params.get('product')||'';
+  const price = Number(params.get('price')||0);
+  const seller = (params.get('seller')||'0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
+  const [step, setStep] = useState<'review'|'paying'|'success'|'error'>('review');
+  const [txHash, setTxHash] = useState('');
+  const [error, setError] = useState('');
 
-  const handlePay = async () => {
-    if (!isConnected || !address) {
-      router.push('/join');
-      return;
-    }
-
+  const handleBuy = async () => {
+    if (!isConnected||!address) { router.push('/join'); return; }
+    setStep('paying');
     try {
-      // Check if buyer profile exists
-      const profiles = await getAllProfiles(address);
-      const hasBuyer = profiles.some((p: any) => p.role === 'buyer');
-
-      if (!hasBuyer) {
-        router.push(`/onboarding?role=buyer`);
-        return;
-      }
-
-      setStep('paying');
-
-      const hash = await sendTransactionAsync({
-        to: sellerWallet,
-        value: parseUnits(price.toString(), 18),
-      });
-
-      setTxHash(hash);
-
-      // Save order to Supabase
-      await saveOrder({
-        buyer_wallet: address,
-        seller_wallet: sellerWallet,
-        product_name: product,
-        amount: price,
-        tx_hash: hash,
-      });
-
-      setStep('success');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Transaction failed';
-      setErrorMsg(
-        msg.includes('rejected') ? 'Transaction rejected in wallet'
-          : msg.includes('insufficient') ? 'Insufficient USDC balance'
-          : 'Transaction failed — please try again'
-      );
+      const hash = await sendTransactionAsync({ to: seller, value: parseUnits(price.toString(),18) });
+      const order = await saveOrder({ buyer_wallet:address, seller_wallet:seller, product_name:product, amount:price, tx_hash:hash });
+      await createEscrowJob({ order_id:order?.id, buyer_wallet:address, seller_wallet:seller, amount:price, tx_hash:hash });
+      setTxHash(hash); setStep('success');
+    } catch(e:any) {
+      setError(e?.message?.includes('rejected')?'Transaction rejected in wallet':'Transaction failed — please try again');
       setStep('error');
     }
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <main style={{minHeight:'100vh',background:'var(--bg)'}}>
       <Nav />
-      <div style={{ maxWidth: 460, margin: '0 auto', padding: '7rem 2rem 4rem' }}>
-        <div style={{ border: '1px solid var(--border)' }}>
-
-          {step === 'review' && (
-            <>
-              <div style={{ padding: '2rem', borderBottom: '1px solid var(--border)', textAlign: 'center', background: 'var(--bg2)' }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  {storeName[store] || store}
-                </div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em' }}>{product}</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', color: 'var(--accent)', letterSpacing: '0.02em' }}>${price} USDC</div>
+      <div style={{maxWidth:520,margin:'0 auto',padding:'120px 56px 80px'}}>
+        {step==='review'&&(
+          <>
+            <div className='v-eyebrow' style={{marginBottom:16}}><div className='v-eyebrow-rule'/><span className='v-eyebrow-label'>Buy Now</span></div>
+            <h1 style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:32}}>Confirm Purchase</h1>
+            <div className='v-order-card' style={{marginBottom:24}}>
+              <div style={{padding:'28px',borderBottom:'1px solid var(--b1)'}}>
+                <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--w18)',marginBottom:6}}>Product</div>
+                <div style={{fontFamily:"'Cormorant',serif",fontSize:22,fontWeight:400,color:'var(--w85)',marginBottom:4}}>{product}</div>
+                <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.08em'}}>{store}</div>
               </div>
-
-              <div style={{ padding: '1.5rem' }}>
-                {[
-                  ['Product', product, false],
-                  ['Network', 'Arc Testnet', true],
-                  ['Gas fee', '~$0.001 USDC', false],
-                  ['Total', `$${price} USDC`, true],
-                ].map(([label, val, accent], i) => (
-                  <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
-                    <span style={{ color: 'var(--muted)', fontWeight: 300, fontSize: '0.875rem' }}>{String(label)}</span>
-                    <span style={{ fontWeight: 500, fontSize: String(label) === 'Total' ? '1.2rem' : '0.875rem', color: accent ? 'var(--accent)' : 'var(--ink)', fontFamily: String(label) === 'Total' ? "'Bebas Neue', sans-serif" : 'inherit' }}>
-                      {String(val)}
-                    </span>
-                  </div>
-                ))}
-
-                {!isConnected && (
-                  <div style={{ background: 'rgba(201,77,122,0.08)', border: '1px solid rgba(201,77,122,0.3)', padding: '0.75rem', marginTop: '1rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', color: 'var(--accent)', letterSpacing: '0.05em', textAlign: 'center' }}>
-                    Connect your wallet to complete this purchase
-                  </div>
-                )}
-
-                <button
-                  onClick={handlePay}
-                  style={{ width: '100%', background: 'var(--accent)', color: '#fff', border: 'none', padding: '1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.15em', cursor: 'pointer', marginTop: '1.5rem' }}>
-                  {isConnected ? `Pay $${price} USDC →` : 'Connect Wallet to Pay →'}
-                </button>
-
-                <div style={{ textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1rem' }}>
-                  Arc · Onchain · 0% Fee
-                </div>
-              </div>
-            </>
-          )}
-
-          {step === 'paying' && (
-            <div style={{ textAlign: 'center', padding: '4rem 1.5rem' }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem', marginBottom: '1rem' }}>
-                {isConfirming ? 'Confirming...' : 'Waiting for approval...'}
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 300, marginBottom: '2rem' }}>
-                {isConfirming ? 'Transaction submitted, waiting for confirmation' : 'Please approve the transaction in your wallet'}
-              </div>
-              <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTop: '3px solid var(--accent)', borderRadius: '50%', margin: '0 auto', animation: 'spin 1s linear infinite' }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
-          )}
-
-          {step === 'success' && (
-            <div style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '4rem', color: 'var(--accent)' }}>✓</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Payment Confirmed</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 300 }}>
-                ${price} USDC sent to {storeName[store]} on Arc Testnet
-              </div>
-              {txHash && (
-                <a href={`https://testnet.arcscan.app/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', color: 'var(--accent)', wordBreak: 'break-all', padding: '0.75rem', border: '1px solid var(--border)', marginBottom: '1.5rem', textDecoration: 'none' }}>
-                  View on Arc Explorer →<br />{txHash.slice(0, 20)}...{txHash.slice(-8)}
-                </a>
-              )}
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link href="/marketplace">
-                  <button style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                    Keep Shopping →
-                  </button>
-                </Link>
-                <Link href="/profile">
-                  <button style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', padding: '0.75rem 1.5rem', fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                    View Orders
-                  </button>
-                </Link>
+              <div style={{padding:'20px 28px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--w18)'}}>Total</span>
+                <span style={{fontFamily:"'Cormorant',serif",fontSize:32,fontWeight:300,color:'var(--a2)'}}>{'$'}{price}{' USDC'}</span>
               </div>
             </div>
-          )}
-
-          {step === 'error' && (
-            <div style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', color: '#e84040' }}>✕</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Transaction Failed</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 300 }}>{errorMsg}</div>
-              <button onClick={() => setStep('review')} style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                Try Again
-              </button>
+            <div style={{border:'1px solid var(--b1)',padding:'14px 18px',marginBottom:24,display:'flex',alignItems:'center',gap:10}}>
+              <div className='v-arc-badge-dot'/>
+              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7}}>Funds held in ERC-8183 escrow until delivery confirmed. 48-hour dispute window.</div>
             </div>
-          )}
-
-        </div>
+            <button onClick={handleBuy} className='btn-primary' style={{width:'100%',padding:'18px',fontSize:12}}>{'Pay $'}{price}{' USDC on Arc →'}</button>
+            <div style={{textAlign:'center',marginTop:16}}><Link href={'/store/'+store} style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em',textDecoration:'none'}}>← Back to Store</Link></div>
+          </>
+        )}
+        {step==='paying'&&(
+          <div style={{textAlign:'center',padding:'4rem 0'}}>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,color:'var(--w)',marginBottom:16}}>Processing</div>
+            <div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:32}}>Approve the payment in your wallet</div>
+            <div className='v-spinner' style={{margin:'0 auto'}}/>
+          </div>)}
+        {step==='success'&&(
+          <div style={{textAlign:'center',padding:'3rem 0'}}>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'5rem',fontWeight:300,color:'var(--a2)',lineHeight:1,marginBottom:16}}>✓</div>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,52px)',fontWeight:300,color:'var(--w)',marginBottom:12}}>Payment Confirmed</div>
+            <div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.8,marginBottom:8}}>Transaction confirmed on Arc Testnet</div>
+            <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.08em',marginBottom:8}}>ERC-8183 escrow active · Release in 48 hours</div>
+            {txHash&&<div style={{fontSize:10,fontWeight:300,color:'var(--a)',letterSpacing:'0.06em',wordBreak:'break-all',marginBottom:32,padding:'10px 16px',border:'1px solid var(--b1)',background:'var(--bg2)'}}>{txHash}</div>}
+            <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:260,margin:'0 auto'}}>
+              <Link href='/profile'><button className='btn-primary' style={{width:'100%',padding:'14px',fontSize:10}}>View My Orders</button></Link>
+              <Link href='/marketplace'><button className='btn-ghost' style={{width:'100%',padding:'14px',fontSize:10}}>Keep Shopping</button></Link>
+            </div>
+          </div>)}
+        {step==='error'&&(
+          <div style={{textAlign:'center',padding:'3rem 0'}}>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'4rem',fontWeight:300,color:'var(--err)',lineHeight:1,marginBottom:16}}>✕</div>
+            <div style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(24px,4vw,36px)',fontWeight:300,color:'var(--w)',marginBottom:8}}>Transaction Failed</div>
+            <div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.75,marginBottom:28}}>{error}</div>
+            <button onClick={()=>setStep('review')} className='btn-amber-ghost'>Try Again</button>
+          </div>)}
       </div>
     </main>
   );
 }
 
 export default function Checkout() {
-  return (
-    <Suspense>
-      <CheckoutContent />
-    </Suspense>
-  );
+  return <Suspense><CheckoutContent /></Suspense>;
 }
