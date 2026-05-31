@@ -9,6 +9,7 @@ import ArcUnifiedBalance from '../components/ArcUnifiedBalance';
 import ArcIdentityBadge from '../components/ArcIdentityBadge';
 import ArcAgenticBanner from '../components/ArcAgenticBanner';
 import CircleAppKitPanel from '../components/CircleAppKitPanel';
+import CircleAppKitPanel from '../components/CircleAppKitPanel';
 
 export default function Profile() {
   const { address, isConnected } = useAccount();
