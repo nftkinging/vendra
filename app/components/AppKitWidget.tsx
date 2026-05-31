@@ -2,9 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useBalance, useWalletClient } from 'wagmi';
 import { formatUnits } from 'viem';
-import { AppKit } from '@circle-fin/app-kit';
-import { ViemAdapter } from '@circle-fin/adapter-viem-v2';
-import Image from 'next/image';
 
 type Tab = 'balance'|'deposit'|'bridge';
 const ARC_USDC = '0x3600000000000000000000000000000000000000' as `0x${string}`;
@@ -47,23 +44,27 @@ export default function AppKitWidget() {
 
   const handleBridge = async () => {
     if (!bridgeAmount) { setError('Enter an amount'); return; }
-    if (!walletClient) { setError('Wallet not connected'); return; }
+    if (!walletClient) { setError('Wallet not connected. Please reconnect.'); return; }
     setLoading(true); setError(''); setResult('');
     try {
-      const adapter = new ViemAdapter({ walletClient });
-      const kit = new AppKit();
-      await kit.bridge({
-        from: { adapter, chain: fromChain as any },
-        to: { adapter, chain: 'Arc_Testnet' as any },
-        amount: bridgeAmount,
-        token: 'USDC',
+      // Use Circle App Kit bridge via our API route
+      const res = await fetch('/api/circle/bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromChain,
+          toChain: 'Arc_Testnet',
+          amount: bridgeAmount,
+          walletAddress: address,
+        }),
       });
-      setResult('Bridge initiated! USDC is on its way to Arc Testnet.');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult('Bridge initiated! USDC is on its way to Arc Testnet via CCTP.');
     } catch(e:any) {
-      setError(e?.message || 'Bridge failed. Make sure you have USDC on the selected chain.');
+      setError(e?.message || 'Bridge failed. Make sure you have USDC on the selected chain and try again.');
     } finally { setLoading(false); }
   };
-
   const ChainLogo = ({ logo, label, size=28 }: { logo:string; label:string; size?:number }) => (
     <img src={logo} alt={label} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', border:'1px solid var(--b1)', background:'var(--bg3)', flexShrink:0 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
   );
