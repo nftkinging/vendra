@@ -9,15 +9,13 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.CIRCLE_API_KEY!,
       entitySecret: process.env.CIRCLE_ENTITY_SECRET!,
     });
-    const wallet = (await client.createWallets({
-      walletSetId: process.env.CIRCLE_WALLET_SET_ID!,
-      blockchains: ['ARC-TESTNET'],
-      count: 1,
-      accountType: 'EOA',
-      metadata: [{ name: email, refId: email }],
-    })).data?.wallets?.[0];
-    if (!wallet) return NextResponse.json({ error: 'Wallet creation failed' }, { status: 500 });
-    return NextResponse.json({ walletId: wallet.id, address: wallet.address });
+    // Search for existing wallet by refId (email)
+    const wallets = (await client.listWallets({ refId: email })).data?.wallets;
+    if (wallets && wallets.length > 0) {
+      const wallet = wallets[0];
+      return NextResponse.json({ found: true, walletId: wallet.id, address: wallet.address });
+    }
+    return NextResponse.json({ found: false });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

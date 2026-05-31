@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
       entitySecret: process.env.CIRCLE_ENTITY_SECRET!,
     });
     const balances = (await client.getWalletTokenBalance({ id: walletId })).data?.tokenBalances;
-    const usdc = balances?.find(b => b.token?.symbol === 'USDC');
-    return NextResponse.json({ balance: usdc?.amount || '0', balances });
+    const usdc = balances?.find((b: any) => b.token?.symbol === 'USDC');
+    return NextResponse.json({ balance: usdc?.amount || '0' });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

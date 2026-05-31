@@ -6,9 +6,7 @@ const ARC_USDC = '0x3600000000000000000000000000000000000000';
 export async function POST(req: NextRequest) {
   try {
     const { walletId, walletAddress, toAddress, amount } = await req.json();
-    if (!walletId || !walletAddress || !toAddress || !amount) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+    if (!walletId || !walletAddress || !toAddress || !amount) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     const client = initiateDeveloperControlledWalletsClient({
       apiKey: process.env.CIRCLE_API_KEY!,
       entitySecret: process.env.CIRCLE_ENTITY_SECRET!,
