@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import CartButton from './components/CartButton';
 import CartDrawer from './components/CartDrawer';
 import AppKitWidget from './components/AppKitWidget';
+import CircleBalanceDisplay from './components/CircleBalanceDisplay';
 
 type CircleStep = 'email'|'otp'|'checking'|'found'|'notfound'|'creating'|'done';
 type CircleWallet = { address: string; walletId: string; email: string };
@@ -238,11 +239,12 @@ export default function Nav() {
         <div className='v-nav-right'>
           <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{textDecoration:'none'}}><button className='btn-faucet'>💧 Faucet</button></a>
           <CartButton/>
-          {isConnected&&<AppKitWidget/>}
+          {isConnected && <AppKitWidget />}
+          <CircleBalanceDisplay />
           {isConnected
             ?<ConnectButton accountStatus='address' chainStatus='none' showBalance={false}/>
             :circleWallet
-              ?<button onClick={()=>{setShowDashboard(true);fetchBalance(circleWallet.walletId);}} className='btn-nav-amber' style={{display:'flex',alignItems:'center',gap:8}}><span>⭕</span><span>{shortAddr(circleWallet.address)}</span></button>
+              ?null
               :<button onClick={()=>setShowLogin(true)} className='btn-nav-amber'>Log In</button>}
         </div>
       </nav>
