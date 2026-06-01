@@ -7,6 +7,7 @@ import CartButton from './components/CartButton';
 import CartDrawer from './components/CartDrawer';
 import AppKitWidget from './components/AppKitWidget';
 import CircleWalletDashboard from './components/CircleWalletDashboard';
+import CircleBalanceWidget from './components/CircleBalanceWidget';
 
 type CircleStep = 'email'|'otp'|'checking'|'found'|'notfound'|'creating'|'done';
 type CircleWallet = { address: string; walletId: string; email: string };
@@ -162,6 +163,7 @@ export default function Nav() {
           <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{textDecoration:'none'}}><button className='btn-faucet'>💧 Faucet</button></a>
           <CartButton/>
           {isConnected && <AppKitWidget />}
+          {!isConnected && mounted && circleWallet && <CircleBalanceWidget wallet={circleWallet} />}
           {isConnected
             ? <ConnectButton accountStatus='address' chainStatus='none' showBalance={false}/>
             : mounted && circleWallet
