@@ -52,7 +52,7 @@ export default function CircleBalanceWidget({ wallet }: Props) {
       const res = await fetch('/api/circle/bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromChain, toChain: 'Arc_Testnet', amount: bridgeAmount, walletAddress: wallet.address }),
+        body: JSON.stringify({ fromChain, toChain: 'Arc_Testnet', amount: bridgeAmount, walletAddress: wallet.address, walletId: wallet.walletId }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
