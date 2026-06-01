@@ -33,6 +33,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const handleGetStarted = async () => {
+    // Check Circle wallet session
+    try {
+      const saved = sessionStorage.getItem('vendra_circle_wallet');
+      if (saved) { router.push('/onboarding'); return; }
+    } catch {}
     if (!isConnected) { router.push('/join'); return; }
     setLoading(true);
     try {

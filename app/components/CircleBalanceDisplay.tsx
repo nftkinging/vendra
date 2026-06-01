@@ -76,7 +76,7 @@ export default function CircleBalanceDisplay() {
             <div style={{ padding: 16 }}>
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
                 <div style={{ fontSize: 9, fontWeight: 300, fontStyle: 'italic', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--w18)', marginBottom: 4 }}>USDC Balance</div>
-                <div style={{ fontFamily: "'Cormorant',serif", fontSize: 44, fontWeight: 300, color: 'var(--sl2)', lineHeight: 1 }}>${balance}</div>
+                <div style={{ fontFamily: "'Cormorant',serif", fontSize: 36, fontWeight: 300, color: 'var(--sl2)', lineHeight: 1 }}>${parseFloat(balance).toFixed(2)}</div>
               </div>
               <div style={{ border: '1px solid var(--b1)', padding: '10px 12px', marginBottom: 14, background: 'var(--bg3)' }}>
                 <div style={{ fontSize: 9, fontWeight: 300, fontStyle: 'italic', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--w18)', marginBottom: 4 }}>Wallet Address</div>

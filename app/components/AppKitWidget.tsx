@@ -105,17 +105,17 @@ export default function AppKitWidget() {
               {/* BALANCE */}
               {tab==='balance' && (
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
-                    <img src='https://pbs.twimg.com/profile_images/1834254808826806272/1834254808826806272_400x400.jpg' alt='Arc' style={{ width:40, height:40, borderRadius:'50%', border:'1px solid var(--b2)' }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-                  </div>
                   <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', letterSpacing:'0.16em', textTransform:'uppercase', color:'var(--w18)', marginBottom:4 }}>Arc Testnet · USDC Balance</div>
-                  <div style={{ fontFamily:"'Cormorant',serif", fontSize:52, fontWeight:300, color:'var(--a2)', lineHeight:1, marginBottom:4 }}>${balance}</div>
-                  <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', color:'var(--w18)', marginBottom:20 }}>USDC · Arc Testnet</div>
-                  <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-                    <button onClick={() => setTab('deposit')} className='btn-primary' style={{ flex:1, fontSize:9, padding:'10px' }}>Deposit ↓</button>
-                    <button onClick={() => setTab('bridge')} className='btn-ghost' style={{ flex:1, fontSize:9, padding:'10px' }}>Bridge 🌉</button>
+                  <div style={{ fontFamily:"'Cormorant',serif", fontSize:38, fontWeight:300, color:'var(--a2)', lineHeight:1, marginBottom:2 }}>${parseFloat(balance).toFixed(2)}</div>
+                  <div style={{ fontSize:9, fontWeight:300, fontStyle:'italic', color:'var(--w18)', marginBottom:14 }}>USDC · Arc Testnet</div>
+                  <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                    <button onClick={() => setTab('deposit')} className='btn-primary' style={{ flex:1, fontSize:9, padding:'9px' }}>Deposit ↓</button>
+                    <button onClick={() => setTab('bridge')} className='btn-ghost' style={{ flex:1, fontSize:9, padding:'9px' }}>Bridge 🌉</button>
                   </div>
-                  <a href={`https://testnet.arcscan.app/address/${address}`} target='_blank' rel='noopener noreferrer' style={{ fontSize:9, fontWeight:300, fontStyle:'italic', color:'var(--w18)', letterSpacing:'0.10em', textDecoration:'none' }}>View on Arc Explorer ↗</a>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>💧 Faucet ↗</button></a>
+                    <a href={`https://testnet.arcscan.app/address/${address}`} target='_blank' rel='noopener noreferrer' style={{ flex:1 }}><button className='btn-ghost' style={{ width:'100%', fontSize:9, padding:'8px' }}>Explorer ↗</button></a>
+                  </div>
                 </div>)}
 
               {/* DEPOSIT */}

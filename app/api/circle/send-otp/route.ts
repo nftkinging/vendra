@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { setOtp } from '../../../lib/otp';
+import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+  'https://orqdqhrhqtehxawjpjkr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycWRxaHJocXRlaHhhd2pwamtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MTg0NjksImV4cCI6MjA5MTQ5NDQ2OX0.G3ijP8DJ8I35SXsSMZE834Q8x_tqWT1yp-3gi---bQo'
+);
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    setOtp(email, otp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    // Delete any existing OTP for this email
+    await supabase.from('otp_codes').delete().eq('email', email.toLowerCase().trim());
+    // Store new OTP
+    await supabase.from('otp_codes').insert({ email: email.toLowerCase().trim(), otp, expires_at: expiresAt });
     await resend.emails.send({
       from: 'Vendra <noreply@vendramarket.xyz>',
       to: email,
