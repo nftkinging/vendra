@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { setOtp } from '../../../lib/otp';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-declare global { var vendraOtpStore: Map<string, { otp: string; expires: number }> }
-if (!global.vendraOtpStore) global.vendraOtpStore = new Map();
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 10 * 60 * 1000;
-    global.vendraOtpStore.set(email.toLowerCase(), { otp, expires });
+    setOtp(email, otp);
     await resend.emails.send({
       from: 'Vendra <noreply@vendramarket.xyz>',
       to: email,
