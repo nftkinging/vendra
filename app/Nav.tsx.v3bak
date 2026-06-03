@@ -13,7 +13,7 @@ type CircleStep = 'email'|'otp'|'checking'|'found'|'notfound'|'creating'|'done';
 type CircleWallet = { address: string; walletId: string; email: string };
 const STORAGE_KEY = 'vendra_circle_wallet';
 
-export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
+export default function Nav() {
   const { isConnected } = useAccount();
   const [showLogin, setShowLogin] = useState(false);
   const [showCircle, setShowCircle] = useState(false);
@@ -156,7 +156,7 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
           </div>
         </div>)}
 
-      <nav className={theme === 'v4' ? 'v-nav v4nav' : 'v-nav'}>
+      <nav className='v-nav'>
         <Link href='/' className='v-logo'><div className='v-logo-emblem'><span className='v-logo-v'>V</span></div><span className='v-logo-name'>Vendra</span></Link>
         <div className='v-nav-links'><Link href='/marketplace'>Marketplace</Link><Link href='/store/create'>Sell</Link>{isConnected&&<Link href='/profile'>Profile</Link>}</div>
         <div className='v-nav-right'>
