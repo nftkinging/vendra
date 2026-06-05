@@ -3,7 +3,7 @@ import Nav from '../Nav';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
-import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, deleteStore } from '../lib/supabase';
+import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, deleteStore, getStores } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function Profile() {
@@ -14,6 +14,7 @@ export default function Profile() {
   const [store, setStore] = useState<any>(null);
   const [buyerOrders, setBuyerOrders] = useState<any[]>([]);
   const [sellerOrders, setSellerOrders] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
   const [view, setView] = useState<'seller'|'buyer'>('seller');
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -21,10 +22,10 @@ export default function Profile() {
 
   useEffect(() => {
     if (!isConnected || !address) { router.push('/'); return; }
-    Promise.all([getAllProfiles(address), getStoreByWallet(address), getOrdersByBuyer(address), getOrdersBySeller(address)]).then(([all, s, bo, so]) => {
+    Promise.all([getAllProfiles(address), getStoreByWallet(address), getOrdersByBuyer(address), getOrdersBySeller(address), getStores()]).then(([all, s, bo, so, st]) => {
       const sp = all.find((p:any) => p.role === 'seller') || null;
       const bp = all.find((p:any) => p.role === 'buyer') || null;
-      setSellerProfile(sp); setBuyerProfile(bp); setStore(s); setBuyerOrders(bo); setSellerOrders(so);
+      setSellerProfile(sp); setBuyerProfile(bp); setStore(s); setBuyerOrders(bo); setSellerOrders(so); setStores(st || []);
       if (sp) setView('seller'); else if (bp) setView('buyer');
       setLoading(false);
     });
@@ -41,6 +42,18 @@ export default function Profile() {
   const initials = active?.display_name?.slice(0,2).toUpperCase() || address?.slice(2,4).toUpperCase() || 'VN';
   const totalRevenue = sellerOrders.reduce((s,o) => s + Number(o.amount), 0);
   const totalSpent = buyerOrders.reduce((s,o) => s + Number(o.amount), 0);
+
+  // resolve an order back to its product image (seller+name, then name-only)
+  const stripQty = (n:string) => (n || '').replace(/\s+x\d+$/i, '');
+  const imgExact: Record<string,string> = {};
+  const imgName: Record<string,string> = {};
+  stores.forEach((s:any) => (s.products || []).forEach((p:any) => {
+    if (p?.image_url) { imgExact[s.owner_wallet + '|' + p.name] = p.image_url; if (!imgName[p.name]) imgName[p.name] = p.image_url; }
+  }));
+  const imgFor = (o:any) => imgExact[o.seller_wallet + '|' + stripQty(o.product_name)] || imgName[stripQty(o.product_name)] || null;
+  const Thumb = ({ o, sm }: { o:any; sm?:boolean }) => (
+    <span className={'pf-thumb-wrap' + (sm ? ' sm' : '')}><span className='pf-thumb-box'>📦</span>{imgFor(o) && <img src={imgFor(o)} alt='' className='pf-thumb-img' onError={(e) => { e.currentTarget.style.display = 'none'; }} />}</span>
+  );
 
   if (loading) return <main className='v4home' style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Nav theme='v4' /><div className='v4spinner' /></main>;
 
@@ -118,7 +131,7 @@ export default function Profile() {
               <div className='pf-recent-h'>Recent sales</div>
               {sellerOrders.slice(0,3).length === 0 ? <div className='pf-recent-empty'>No sales yet</div>
               : sellerOrders.slice(0,3).map((o:any) => (
-                <div key={o.id} className='pf-recent-row'><div className='pf-recent-ic'>📦</div><div style={{ flex: 1, minWidth: 0 }}><div className='pf-recent-name'>{o.product_name}</div><div className='pf-recent-date'>{new Date(o.created_at).toLocaleDateString()}</div></div><div className='pf-recent-amt'>+{Number(o.amount).toFixed(0)}</div></div>
+                <div key={o.id} className='pf-recent-row'><Thumb o={o} sm /><div style={{ flex: 1, minWidth: 0 }}><div className='pf-recent-name'>{o.product_name}</div><div className='pf-recent-date'>{new Date(o.created_at).toLocaleDateString()}</div></div><div className='pf-recent-amt'>+{Number(o.amount).toFixed(0)}</div></div>
               ))}
             </div>
           </div>
@@ -126,7 +139,7 @@ export default function Profile() {
           <div className='pf-orders'>
             {sellerOrders.length === 0 ? <div className='pf-orders-empty'>No sales yet</div>
             : sellerOrders.map((o:any) => (
-              <div key={o.id} className='pf-order'><div className='pf-order-ic'>📦</div><div style={{ flex: 1, minWidth: 0 }}><div className='pf-order-name'>{o.product_name}</div><div className='pf-order-meta'>{new Date(o.created_at).toLocaleDateString()}{o.tx_hash ? ' · ' + o.tx_hash.slice(0,14) + '...' : ''}</div></div><div className='pf-order-amt'>${Number(o.amount).toFixed(2)}</div></div>
+              <div key={o.id} className='pf-order'><Thumb o={o} /><div style={{ flex: 1, minWidth: 0 }}><div className='pf-order-name'>{o.product_name}</div><div className='pf-order-meta'>{new Date(o.created_at).toLocaleDateString()}{o.tx_hash ? ' · ' + o.tx_hash.slice(0,14) + '...' : ''}</div></div><div className='pf-order-amt'>${Number(o.amount).toFixed(2)}</div></div>
             ))}
           </div>
         </div>
@@ -143,7 +156,7 @@ export default function Profile() {
           <div className='pf-orders' style={{ marginBottom: 28 }}>
             {buyerOrders.length === 0 ? <div className='pf-orders-empty'>No orders yet — <Link href='/marketplace' style={{ color: 'var(--v4-aDeep)' }}>explore the marketplace</Link></div>
             : buyerOrders.map((o:any) => (
-              <Link key={o.id} href={'/orders/' + o.id} className='pf-order'><div className='pf-order-ic'>📦</div><div style={{ flex: 1, minWidth: 0 }}><div className='pf-order-name'>{o.product_name}</div><div className='pf-order-meta'>{new Date(o.created_at).toLocaleDateString()} · click to view →</div></div><div className='pf-order-amt'>${Number(o.amount).toFixed(2)}</div></Link>
+              <Link key={o.id} href={'/orders/' + o.id} className='pf-order'><Thumb o={o} /><div style={{ flex: 1, minWidth: 0 }}><div className='pf-order-name'>{o.product_name}</div><div className='pf-order-meta'>{new Date(o.created_at).toLocaleDateString()} · click to view →</div></div><div className='pf-order-amt'>${Number(o.amount).toFixed(2)}</div></Link>
             ))}
           </div>
           <Link href='/marketplace' className='v4btn v4btn-amber'>Browse marketplace →</Link>
