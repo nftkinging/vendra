@@ -50,10 +50,13 @@ export default function Profile() {
   stores.forEach((s:any) => (s.products || []).forEach((p:any) => {
     if (p?.image_url) { imgExact[s.owner_wallet + '|' + p.name] = p.image_url; if (!imgName[p.name]) imgName[p.name] = p.image_url; }
   }));
-  const imgFor = (o:any) => imgExact[o.seller_wallet + '|' + stripQty(o.product_name)] || imgName[stripQty(o.product_name)] || null;
-  const Thumb = ({ o, sm }: { o:any; sm?:boolean }) => (
-    <span className={'pf-thumb-wrap' + (sm ? ' sm' : '')}><span className='pf-thumb-box'>📦</span>{imgFor(o) && <img src={imgFor(o)} alt='' className='pf-thumb-img' onError={(e) => { e.currentTarget.style.display = 'none'; }} />}</span>
-  );
+  const imgFor = (o:any): string | null => imgExact[o.seller_wallet + '|' + stripQty(o.product_name)] || imgName[stripQty(o.product_name)] || null;
+  const Thumb = ({ o, sm }: { o:any; sm?:boolean }) => {
+    const src = imgFor(o);
+    return (
+      <span className={'pf-thumb-wrap' + (sm ? ' sm' : '')}><span className='pf-thumb-box'>📦</span>{src && <img src={src} alt='' className='pf-thumb-img' onError={(e) => { e.currentTarget.style.display = 'none'; }} />}</span>
+    );
+  };
 
   if (loading) return <main className='v4home' style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Nav theme='v4' /><div className='v4spinner' /></main>;
 
