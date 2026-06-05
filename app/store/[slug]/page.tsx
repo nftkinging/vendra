@@ -6,15 +6,6 @@ import { useState, useEffect } from 'react';
 import { getStoreBySlug } from '../../lib/supabase';
 import { useCart } from '../../lib/cart';
 
-const SAMPLE: Record<string,any> = {
-  'nour-atelier':{ name:'Nour Atelier', slug:'nour-atelier', category:'Fashion', tagline:'Handcrafted jewellery from the Middle East', description:'Each piece is handcrafted using traditional techniques passed down through generations.', owner_wallet:'0x70997970C51812dc3A010C7d01b50e0d17dc79C8', x_handle:'@nour_atelier', banner_url:'', products:[{id:'1',name:'Gold Crescent Ring',price:45,type:'Physical',description:'Sterling silver with gold plating',image_url:''},{id:'2',name:'Lapis Lazuli Earrings',price:62,type:'Physical',description:'Genuine lapis lazuli stones',image_url:''},{id:'3',name:'Silver Khamsa Pendant',price:38,type:'Physical',description:'Traditional Khamsa hand symbol',image_url:''},{id:'4',name:'Lookbook PDF',price:8,type:'Digital',description:'Full season lookbook',image_url:''}] },
-  'bytedrop':{ name:'ByteDrop', slug:'bytedrop', category:'Digital', tagline:'Premium UI kits and Figma assets', description:'Professional design assets for modern products.', owner_wallet:'0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC', x_handle:'@bytedrop', banner_url:'', products:[{id:'1',name:'Dashboard UI Kit',price:49,type:'Digital',description:'Complete dashboard component library',image_url:''},{id:'2',name:'Icon Pack Pro',price:19,type:'Digital',description:'500+ custom icons',image_url:''},{id:'3',name:'Landing Page Templates',price:35,type:'Digital',description:'12 conversion-optimized templates',image_url:''}] },
-  'solar-prints':{ name:'Solar Prints', slug:'solar-prints', category:'Art', tagline:'Limited edition art prints worldwide', description:'Gallery-quality prints from independent artists.', owner_wallet:'0x90F79bf6EB2c4f870365E785982E1f101E93b906', x_handle:'@solarprints', banner_url:'', products:[{id:'1',name:'Desert Bloom Print',price:55,type:'Physical',description:'A2 giclée print',image_url:''},{id:'2',name:'Neon City Poster',price:40,type:'Physical',description:'A1 format signed',image_url:''}] },
-  'kode-studio':{ name:'Kode Studio', slug:'kode-studio', category:'Services', tagline:'Custom dev work and automation', description:'We build custom tools, bots, and web apps.', owner_wallet:'0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65', x_handle:'@kodestudio', banner_url:'', products:[{id:'1',name:'Landing Page Build',price:299,type:'Service',description:'Custom Next.js landing page',image_url:''},{id:'2',name:'Bot Development',price:199,type:'Service',description:'Telegram or Discord bot',image_url:''}] },
-  'umami-box':{ name:'Umami Box', slug:'umami-box', category:'Food', tagline:'Artisan Japanese food kits', description:'Curated Japanese pantry essentials.', owner_wallet:'0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc', x_handle:'@umamibox', banner_url:'', products:[{id:'1',name:'Ramen Kit Deluxe',price:28,type:'Physical',description:'Everything for authentic ramen',image_url:''},{id:'2',name:'Matcha Collection',price:35,type:'Physical',description:'Ceremonial grade matcha set',image_url:''}] },
-  'soundvault':{ name:'SoundVault', slug:'soundvault', category:'Music', tagline:'Exclusive beats and sample packs', description:'Professional-grade audio for creators.', owner_wallet:'0x976EA74026E726554dB657fA54763abd0C3a0aa9', x_handle:'@soundvault', banner_url:'', products:[{id:'1',name:'Lo-Fi Essentials Pack',price:25,type:'Digital',description:'50 lo-fi samples',image_url:''},{id:'2',name:'Trap Drums Vol.2',price:20,type:'Digital',description:'200 one-shot drum samples',image_url:''},{id:'3',name:'Custom Beat License',price:150,type:'Digital',description:'Exclusive rights to one beat',image_url:''}] },
-};
-
 export default function StorePage() {
   const params = useParams();
   const storeSlug = Array.isArray(params.slug) ? params.slug[0] : (params.slug as string);
@@ -24,81 +15,87 @@ export default function StorePage() {
   const { addItem } = useCart();
 
   useEffect(() => {
-    const load = async () => {
-      if (SAMPLE[storeSlug]) { setStore(SAMPLE[storeSlug]); setLoading(false); return; }
-      const db = await getStoreBySlug(storeSlug);
-      setStore(db); setLoading(false);
-    };
-    load();
+    let active = true;
+    setLoading(true);
+    getStoreBySlug(storeSlug)
+      .then(db => { if (active) { setStore(db); setLoading(false); } })
+      .catch(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [storeSlug]);
 
   const handleAddToCart = (product: any) => {
     if (!store) return;
-    addItem({ id:store.slug+'-'+product.id, storeSlug:store.slug, storeName:store.name, sellerWallet:store.owner_wallet, productName:product.name, price:product.price, image:product.image_url||'' });
-    setAddedIds(prev => ({...prev,[product.id]:true}));
-    setTimeout(() => setAddedIds(prev => ({...prev,[product.id]:false})), 2000);
+    addItem({ id: store.slug + '-' + product.id, storeSlug: store.slug, storeName: store.name, sellerWallet: store.owner_wallet, productName: product.name, price: product.price, image: product.image_url || '' });
+    setAddedIds(prev => ({ ...prev, [product.id]: true }));
+    setTimeout(() => setAddedIds(prev => ({ ...prev, [product.id]: false })), 2000);
   };
 
-  if (loading) return <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center'}}><Nav /><div className='v-spinner'/></main>;
-  if (!store) return <main style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}><Nav /><div style={{textAlign:'center'}}><div style={{fontFamily:"'Cormorant',serif",fontSize:'3rem',fontWeight:300,color:'var(--w)',marginBottom:16}}>Store Not Found</div><Link href='/marketplace'><button className='btn-primary'>Back to Marketplace</button></Link></div></main>;
+  if (loading) return (<main className='v4home'><Nav theme='v4' /><div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 68 }}><div className='v4spinner' /></div></main>);
+  if (!store) return (<main className='v4home'><Nav theme='v4' /><div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, paddingTop: 68 }}><div style={{ fontSize: 30, fontWeight: 600 }}>Store not found</div><Link href='/marketplace'><button className='v4btn v4btn-ink'>Back to marketplace</button></Link></div></main>);
 
   const products: any[] = store.products || [];
-  const xHandle = store.x_handle ? (store.x_handle.startsWith('@') ? store.x_handle : '@'+store.x_handle) : null;
+  const xHandle = store.x_handle ? (store.x_handle.startsWith('@') ? store.x_handle : '@' + store.x_handle) : null;
 
   return (
-    <main style={{minHeight:'100vh',background:'var(--bg)'}}>
-      <Nav />
-      {/* Banner */}
+    <main className='v4home'>
+      <Nav theme='v4' />
       {store.banner_url
-        ? <div style={{width:'100%',height:320,overflow:'hidden',position:'relative',marginTop:72}}><img src={store.banner_url} alt='banner' style={{width:'100%',height:'100%',objectFit:'cover',filter:'brightness(0.55)'}}/><div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,transparent 30%,var(--bg) 100%)'}}/></div>
-        : <div style={{height:72}}/>}
-      {/* Store Hero */}
-      <div style={{borderBottom:'1px solid var(--b1)',background:store.banner_url?'transparent':'var(--bg2)'}}>
-        <div style={{maxWidth:900,margin:'0 auto',padding:store.banner_url?'32px 56px 48px':'80px 56px 48px'}}>
-          <div style={{display:'flex',alignItems:'flex-start',gap:24,flexWrap:'wrap'}}>
-            <div style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,var(--a),var(--sl))',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant',serif",fontSize:'1.4rem',fontWeight:300,fontStyle:'italic',flexShrink:0,border:'1px solid var(--b2)',color:'var(--bg)',boxShadow:'0 0 0 4px rgba(12,14,26,0.8)'}}>{ store.name?.slice(0,2).toUpperCase() }</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--a)',letterSpacing:'0.16em',textTransform:'uppercase',marginBottom:6}}>{store.category}{' · Arc Testnet · ERC-8004 Verified'}</div>
-              <div style={{fontFamily:"'Cormorant',serif",fontSize:'clamp(32px,5vw,56px)',fontWeight:300,letterSpacing:'-0.01em',lineHeight:0.94,color:'var(--w)',marginBottom:10}}>{store.name}</div>
-              {store.tagline&&<div style={{fontSize:14,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:6,lineHeight:1.7}}>{store.tagline}</div>}
-              {xHandle&&<a href={'https://x.com/'+xHandle.replace('@','')} target='_blank' rel='noopener noreferrer' style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--a)',textDecoration:'none',letterSpacing:'0.08em',display:'block',marginBottom:6}}>{'𝕏 '}{xHandle}{' ↗'}</a>}
-              {store.description&&<div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',maxWidth:520,lineHeight:1.8,marginTop:8}}>{store.description}</div>}
-            </div>
+        ? <div className='v4st-banner'><img src={store.banner_url} alt='' /></div>
+        : <div style={{ height: 68 }} />}
+      <section className='v4st-head'>
+        <div className='v4st-head-inner'>
+          <div className='v4st-emblem'>{store.name?.slice(0,2).toUpperCase()}</div>
+          <div className='v4st-info'>
+            <div className='v4st-cat'>{store.category}{' · Arc Testnet · ERC-8004 Verified'}</div>
+            <h1 className='v4st-title'>{store.name}</h1>
+            {store.tagline && <div className='v4st-tag'>{store.tagline}</div>}
+            {xHandle && <a className='v4st-x' href={'https://x.com/' + xHandle.replace('@','')} target='_blank' rel='noopener noreferrer'>{'𝕏 '}{xHandle}{' ↗'}</a>}
+            {store.description && <div className='v4st-desc'>{store.description}</div>}
           </div>
         </div>
-      </div>
-      {/* Products */}
-      <div style={{maxWidth:900,margin:'0 auto',padding:'48px 56px 80px'}}>
-        <div style={{fontSize:10,fontWeight:300,fontStyle:'italic',letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--w18)',marginBottom:32}}>{products.length}{' product'}{products.length!==1?'s':''}</div>
-        {products.length===0
-          ? <div style={{textAlign:'center',padding:'4rem',border:'1px solid var(--b1)'}}><div style={{fontFamily:"'Cormorant',serif",fontSize:28,fontWeight:300,color:'var(--w)',marginBottom:8}}>No Products Yet</div><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.10em'}}>This store has not listed any products</div></div>
-          : <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'1px',background:'var(--b1)'}}>
-              {products.map((product:any) => (
-                <div key={product.id} style={{background:'var(--bg)',transition:'background 0.35s'}} onMouseEnter={e=>(e.currentTarget.style.background='var(--bg2)')} onMouseLeave={e=>(e.currentTarget.style.background='var(--bg)')}>
-                  {product.image_url
-                    ? <div style={{width:'100%',aspectRatio:'3/4',overflow:'hidden'}}><img src={product.image_url} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.55s'}}/></div>
-                    : <div style={{width:'100%',aspectRatio:'3/4',background:'linear-gradient(145deg,var(--bg2),var(--bg3))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'3rem',color:'var(--w18)'}}>{'📦'}</div>}
-                  <div style={{padding:'20px 24px'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
-                      <div style={{fontFamily:"'Cormorant',serif",fontSize:20,fontWeight:400,color:'var(--w85)',lineHeight:1.2,flex:1,paddingRight:12}}>{product.name}</div>
-                      <div style={{fontSize:8,fontWeight:300,fontStyle:'italic',letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--w18)',border:'1px solid var(--b1)',padding:'3px 8px',flexShrink:0}}>{product.type}</div>
-                    </div>
-                    {product.description&&<div style={{fontSize:13,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.75,marginBottom:16}}>{product.description}</div>}
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}>
-                      <div style={{fontFamily:"'Cormorant',serif",fontSize:24,fontWeight:300,color:'var(--w85)'}}>{'$'}{product.price}{' USDC'}</div>
-                      <div style={{display:'flex',gap:6}}>
-                        <button onClick={()=>handleAddToCart(product)} style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:300,letterSpacing:'0.14em',textTransform:'uppercase',color:addedIds[product.id]?'var(--a2)':'var(--w35)',border:addedIds[product.id]?'1px solid rgba(212,176,90,0.5)':'1px solid var(--b1)',padding:'7px 14px',background:'transparent',cursor:'pointer',transition:'all 0.35s'}}>{addedIds[product.id]?'✓ Added':'+ Cart'}</button>
-                        <Link href={'/checkout?store='+store.slug+'&product='+encodeURIComponent(product.name)+'&price='+product.price+'&seller='+store.owner_wallet}><button className='btn-primary' style={{fontSize:9,padding:'7px 14px'}}>Buy Now</button></Link>
+      </section>
+      <section className='v4st-body'>
+        <div className='v4st-count'>{products.length}{' product'}{products.length !== 1 ? 's' : ''}</div>
+        {products.length === 0
+          ? <div className='v4empty' style={{ marginTop: 24 }}><h3>No products yet</h3><p>This store has not listed anything.</p></div>
+          : <div className='v4grid' style={{ marginTop: 24 }}>
+              {products.map((product: any) => {
+                const pdp = '/store/' + store.slug + '/' + product.id;
+                const checkoutHref = '/checkout?store=' + store.slug + '&product=' + encodeURIComponent(product.name) + '&price=' + product.price + '&seller=' + store.owner_wallet + '&qty=1';
+                return (
+                  <div key={product.id} className='pcard'>
+                    <Link href={pdp} className='pc-imglink'>
+                      <div className='pc-img'>
+                        <span className='pc-badge'>{product.type}</span>
+                        <img src={product.image_url} alt={product.name} loading='lazy' onError={(e) => { const d = e.currentTarget.parentElement; if (d) { d.classList.add('grad'); (d as HTMLElement).style.background = 'linear-gradient(150deg,#2c2c34,#16161a)'; } }} />
+                        <span className='ph-name'>{product.name}</span>
                       </div>
+                    </Link>
+                    <div className='pc-body'>
+                      <Link href={pdp} className='pc-namelink'><div className='pc-name'>{product.name}</div></Link>
+                      {product.description && <div className='pc-desc'>{product.description}</div>}
+                      <div className='pc-foot'>
+                        <div className='pc-price'>{product.price}<span className='u'>USDC</span></div>
+                        <Link href={checkoutHref}><button className='pc-buynow'>Buy</button></Link>
+                      </div>
+                      <button className={'pc-addcart' + (addedIds[product.id] ? ' added' : '')} onClick={() => handleAddToCart(product)}>{addedIds[product.id] ? 'Added ✓' : 'Add to cart'}</button>
                     </div>
                   </div>
-                </div>))}
+                );
+              })}
             </div>}
-      </div>
-      <footer className='v-footer'>
-        <div style={{opacity:0.5,fontFamily:"'Cormorant',serif",fontSize:15,fontWeight:300,letterSpacing:'0.22em',textTransform:'uppercase',color:'var(--w85)'}}>Vendra</div>
-        <div className='v-footer-copy'>ERC-8183 Escrow · ERC-8004 Identity · Arc Testnet</div>
-        <div className='v-footer-links'><Link href='/marketplace'>Marketplace</Link><a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer'>Faucet</a></div>
+      </section>
+      <footer className='v4foot'>
+        <div className='foot-wrap'>
+          <div className='foot-brand'>
+            <div className='v4brandrow'><span className='v4emblem'><span>V</span></span><span className='fb-name'>Vendra</span></div>
+            <p>The Web3-native marketplace. Sell anything, keep everything, get paid instantly in USDC. Powered by Arc.</p>
+          </div>
+          <div className='foot-col'><h4>Marketplace</h4><Link href='/marketplace'>Browse</Link><Link href='/marketplace'>Categories</Link><Link href='/marketplace'>Top sellers</Link></div>
+          <div className='foot-col'><h4>Sell</h4><Link href='/store/create'>Open a store</Link><Link href='/store/create'>Escrow and payouts</Link><Link href='/profile'>Reputation</Link></div>
+          <div className='foot-col'><h4>Company</h4><Link href='/marketplace'>About</Link><a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer'>Faucet</a><a href='https://docs.arc.io/' target='_blank' rel='noopener noreferrer'>Docs</a></div>
+        </div>
+        <div className='foot-bot'><span>{'©'} 2026 Vendra {'·'} Commerce Unchained</span><span>Live on Arc Testnet {'·'} USDC native</span></div>
       </footer>
     </main>
   );

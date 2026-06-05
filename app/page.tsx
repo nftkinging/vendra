@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { getAllProfiles, getStoreByWallet } from './lib/supabase';
+import { getAllProfiles, getStoreByWallet, getStores } from './lib/supabase';
 
 const PRODUCTS = [
   { n:'Air Jordan 1 "Chicago"', s:'kicksbyleo', c:'Sneakers', p:'182', v:true, g:'linear-gradient(150deg,#c0392b,#7d2018)', img:'/showcase/sneakers.jpg' },
@@ -28,6 +28,7 @@ export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [activeChip, setActiveChip] = useState('All');
+  const [featured, setFeatured] = useState<any[]>([]);
   const globeRef = useRef<HTMLCanvasElement>(null);
 
   const handleGetStarted = async () => {
@@ -49,10 +50,22 @@ export default function Home() {
   };
 
   useEffect(() => {
+    getStores().then((stores:any[]) => {
+      const feat:any[] = [];
+      for (const s of (stores || [])) {
+        const pr = (s.products || [])[0];
+        if (pr) feat.push({ key: s.slug + '-' + pr.id, href: '/store/' + s.slug + '/' + pr.id, cat: s.category || 'Other', v: true, image: pr.image_url || '', name: pr.name, seller: s.name, price: pr.price, g: 'linear-gradient(150deg,#2c2c34,#16161a)', buy: 'View' });
+        if (feat.length >= 8) break;
+      }
+      setFeatured(feat);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.16 });
     document.querySelectorAll('.v4home [data-reveal], .v4home .stg').forEach(el => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [featured]);
 
   useEffect(() => {
     const cv = globeRef.current; if (!cv) return;
@@ -75,6 +88,10 @@ export default function Home() {
     frame();
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  const cards = featured.length > 0
+    ? featured
+    : PRODUCTS.map((p) => ({ key: p.n, href: '/marketplace', cat: p.c, v: p.v, image: p.img, name: p.n, seller: '@' + p.s, price: p.p, g: p.g, buy: 'Buy now' }));
 
   return (
     <main className='v4home'>
@@ -150,20 +167,20 @@ export default function Home() {
             ))}
           </div>
           <div className='v4grid stg'>
-            {PRODUCTS.map((p) => (
-              <Link href='/marketplace' key={p.n} className='pcard'>
+            {cards.map((p:any) => (
+              <Link href={p.href} key={p.key} className='pcard'>
                 <div className='pc-img'>
-                  <span className='pc-badge'>{p.c}</span>
+                  <span className='pc-badge'>{p.cat}</span>
                   {p.v && <span className='pc-verif'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='3'><path d='m5 12 4 4 10-10'/></svg> Verified</span>}
-                  <img src={p.img} alt={p.n} loading='lazy' onError={(e) => { const d = e.currentTarget.parentElement; if (d) { d.classList.add('grad'); d.style.background = p.g; } }} />
-                  <span className='ph-name'>{p.n}</span>
+                  <img src={p.image} alt={p.name} loading='lazy' onError={(e) => { const d = e.currentTarget.parentElement; if (d) { d.classList.add('grad'); d.style.background = p.g; } }} />
+                  <span className='ph-name'>{p.name}</span>
                 </div>
                 <div className='pc-body'>
-                  <div className='pc-name'>{p.n}</div>
-                  <div className='pc-seller'>@{p.s}</div>
+                  <div className='pc-name'>{p.name}</div>
+                  <div className='pc-seller'>{p.seller}</div>
                   <div className='pc-foot'>
-                    <div className='pc-price'>{p.p}<span className='u'>USDC</span></div>
-                    <span className='pc-buy'>Buy now</span>
+                    <div className='pc-price'>{p.price}<span className='u'>USDC</span></div>
+                    <span className='pc-buy'>{p.buy}</span>
                   </div>
                 </div>
               </Link>
