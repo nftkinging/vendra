@@ -27,7 +27,7 @@ export default function CreateStore() {
   const [loading, setLoading] = useState(false);
 
   const slug = (form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) + (address ? '-' + address.slice(2,6) : '');
-  const storeUrl = 'https://vendra-app-omega.vercel.app/store/' + slug;
+  const storeUrl = 'https://vendramarket.xyz/store/' + slug;
   const tweet = 'I just deployed my store "' + form.name + '" on Arc Testnet!\n\n' + storeUrl + '\n\n#ArcTestnet #Web3 #Vendra';
 
   const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
