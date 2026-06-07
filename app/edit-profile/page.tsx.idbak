@@ -1,13 +1,13 @@
 'use client';
 import Nav from '../Nav';
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useVendraWallet } from '../lib/useVendraWallet';
+import { useAccount } from 'wagmi';
 import { useSearchParams } from 'next/navigation';
 import { getProfile, saveProfile, uploadAvatar } from '../lib/supabase';
 import Link from 'next/link';
 
 function EditProfileContent() {
-  const { address } = useVendraWallet();
+  const { address } = useAccount();
   const params = useSearchParams();
   const role = (params.get('role') || 'buyer') as 'buyer'|'seller';
   const avatarRef = useRef<HTMLInputElement>(null);

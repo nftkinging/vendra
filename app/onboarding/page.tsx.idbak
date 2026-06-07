@@ -1,13 +1,13 @@
 'use client';
 import Nav from '../Nav';
 import { useState, useRef, Suspense } from 'react';
-import { useVendraWallet } from '../lib/useVendraWallet';
+import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveProfile, uploadAvatar } from '../lib/supabase';
 import Link from 'next/link';
 
 function OnboardingContent() {
-  const { address, isConnected } = useVendraWallet();
+  const { address, isConnected } = useAccount();
   const router = useRouter();
   const params = useSearchParams();
   const avatarRef = useRef<HTMLInputElement>(null);
