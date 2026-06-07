@@ -35,43 +35,28 @@ export default function CircleWalletDashboard({ wallet, balance, onLogout, onClo
       if (data.error) throw new Error(data.error);
       setSendResult('Sent! TX: ' + (data.txId || '').slice(0, 20) + '...');
       setTo(''); setAmount('');
-    } catch(e:any) { setError(e.message || 'Send failed'); }
+    } catch (e:any) { setError(e.message || 'Send failed'); }
     finally { setSending(false); }
   };
 
   return (
     <div>
-      {/* Wallet info */}
-      <div style={{border:'1px solid rgba(212,176,90,0.2)',background:'rgba(212,176,90,0.04)',padding:'20px',marginBottom:16,position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',top:0,left:'10%',right:'10%',height:1,background:'linear-gradient(90deg,transparent,rgba(212,176,90,0.4),transparent)'}}/>
-        <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--w18)',marginBottom:4}}>Circle Wallet · Arc Testnet</div>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-          <div style={{fontFamily:"'Cormorant',serif",fontSize:11,fontWeight:300,color:'var(--a)',flex:1,wordBreak:'break-all'}}>{wallet.address}</div>
-          <button onClick={handleCopy} style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',border:'1px solid var(--b2)',color:copied?'var(--gr)':'var(--w35)',padding:'5px 10px',background:'transparent',cursor:'pointer',flexShrink:0,transition:'all 0.3s',whiteSpace:'nowrap'}}>{copied?'✓ Copied':'Copy'}</button>
-        </div>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div>
-            <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--w18)',marginBottom:2}}>USDC Balance</div>
-            <div style={{fontFamily:"'Cormorant',serif",fontSize:32,fontWeight:300,color:'var(--a2)'}}>${parseFloat(balance||'0').toFixed(2)}</div>
-          </div>
-          <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer'><button className='btn-amber-ghost' style={{fontSize:9,padding:'8px 12px'}}>Get USDC ↗</button></a>
+      <div className='jn-wallet'>
+        <div className='jn-wallet-l'>Circle wallet · Arc Testnet</div>
+        <div className='jn-addr-row'><div className='jn-addr'>{wallet.address}</div><button onClick={handleCopy} className={'jn-copy' + (copied ? ' done' : '')}>{copied ? '✓ Copied' : 'Copy'}</button></div>
+        <div className='jn-bal-row'>
+          <div><div className='jn-wallet-l' style={{ marginBottom: 2 }}>USDC balance</div><div className='jn-bal'>${parseFloat(balance || '0').toFixed(2)}</div></div>
+          <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' className='v4btn v4btn-ghost' style={{ fontSize: 10, padding: '8px 12px' }}>Get USDC ↗</a>
         </div>
       </div>
-      {/* Send form */}
-      <div style={{marginBottom:8}}>
-        <label className='v-label'>Send to Address</label>
-        <input className='v-input' placeholder='0x...' value={to} onChange={e => setTo(e.target.value)} autoComplete='off' />
-      </div>
-      <div style={{marginBottom:16}}>
-        <label className='v-label'>Amount (USDC)</label>
-        <input className='v-input' type='number' placeholder='e.g. 5.00' value={amount} onChange={e => setAmount(e.target.value)} />
-      </div>
-      {error && <div style={{fontSize:11,fontStyle:'italic',color:'var(--err)',marginBottom:10,border:'1px solid rgba(232,112,112,0.2)',padding:'8px 12px'}}>{error}</div>}
-      {sendResult && <div style={{fontSize:10,fontStyle:'italic',color:'var(--gr)',marginBottom:10,border:'1px solid var(--gr3)',padding:'8px 12px',wordBreak:'break-all'}}>{sendResult}</div>}
-      <button onClick={handleSend} disabled={sending} className='btn-primary' style={{width:'100%',padding:'12px',fontSize:10,marginBottom:10}}>{sending?'Sending...':'Send USDC on Arc →'}</button>
-      <div style={{display:'flex',gap:8}}>
-        <a href={`https://testnet.arcscan.app/address/${wallet.address}`} target='_blank' rel='noopener noreferrer' style={{flex:1}}><button className='btn-ghost' style={{width:'100%',fontSize:9,padding:'8px'}}>Arc Explorer ↗</button></a>
-        <button onClick={onLogout} className='btn-danger' style={{flex:1,fontSize:9,padding:'8px'}}>Log Out</button>
+      <div className='ob-field'><label className='ob-label'>Send to address</label><input className='ob-input' placeholder='0x...' value={to} onChange={e => setTo(e.target.value)} autoComplete='off' /></div>
+      <div className='ob-field'><label className='ob-label'>Amount (USDC)</label><input className='ob-input' type='number' placeholder='e.g. 5.00' value={amount} onChange={e => setAmount(e.target.value)} /></div>
+      {error && <div className='jn-err'>{error}</div>}
+      {sendResult && <div className='jn-ok'>{sendResult}</div>}
+      <button onClick={handleSend} disabled={sending} className='v4btn v4btn-amber jn-cta'>{sending ? 'Sending…' : 'Send USDC on Arc →'}</button>
+      <div className='jn-btn-row'>
+        <a href={`https://testnet.arcscan.app/address/${wallet.address}`} target='_blank' rel='noopener noreferrer' className='v4btn v4btn-ghost jn-sm' style={{ flex: 1 }}>Arc Explorer ↗</a>
+        <button onClick={onLogout} className='jn-logout' style={{ flex: 1 }}>Log out</button>
       </div>
     </div>
   );

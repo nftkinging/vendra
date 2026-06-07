@@ -43,11 +43,11 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
   const saveWallet = (w: CircleWallet) => { setCircleWallet(w); try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(w)); } catch {} };
   const logout = () => { setCircleWallet(null); try { sessionStorage.removeItem(STORAGE_KEY); } catch {} setShowDashboard(false); setShowCircle(false); };
   const closeAll = () => { setShowLogin(false); setShowCircle(false); setShowDashboard(false); setStep('email'); setError(''); setOtp(''); };
-  const shortAddr = (addr: string) => addr ? addr.slice(0,6)+'...'+addr.slice(-4) : '';
+  const shortAddr = (addr: string) => addr ? addr.slice(0,6) + '...' + addr.slice(-4) : '';
 
   const fetchBalance = async (walletId: string) => {
     try {
-      const res = await fetch('/api/circle/balance', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ walletId }) });
+      const res = await fetch('/api/circle/balance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ walletId }) });
       const data = await res.json();
       setBalance(data.balance || '0');
     } catch {}
@@ -57,11 +57,11 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
     if (!email) { setError('Enter your email'); return; }
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/circle/send-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const res = await fetch('/api/circle/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setStep('otp'); setResendTimer(60);
-    } catch(e:any) { setError(e.message || 'Failed to send code'); }
+    } catch (e:any) { setError(e.message || 'Failed to send code'); }
     finally { setLoading(false); }
   };
 
@@ -69,26 +69,26 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
     if (!otp || otp.length !== 6) { setError('Enter the 6-digit code'); return; }
     setLoading(true); setError(''); setStep('checking');
     try {
-      const vRes = await fetch('/api/circle/verify-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, otp }) });
+      const vRes = await fetch('/api/circle/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp }) });
       const vData = await vRes.json();
       if (vData.error) throw new Error(vData.error);
-      const res = await fetch('/api/circle/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const res = await fetch('/api/circle/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      if (data.found) { const w = { address:data.address, walletId:data.walletId, email }; saveWallet(w); await fetchBalance(data.walletId); setStep('found'); }
+      if (data.found) { const w = { address: data.address, walletId: data.walletId, email }; saveWallet(w); await fetchBalance(data.walletId); setStep('found'); }
       else { setStep('notfound'); }
-    } catch(e:any) { setError(e.message || 'Verification failed'); setStep('otp'); }
+    } catch (e:any) { setError(e.message || 'Verification failed'); setStep('otp'); }
     finally { setLoading(false); }
   };
 
   const handleCreate = async () => {
     setStep('creating'); setError('');
     try {
-      const res = await fetch('/api/circle/create-wallet', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const res = await fetch('/api/circle/create-wallet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      const w = { address:data.address, walletId:data.walletId, email }; saveWallet(w); await fetchBalance(data.walletId); setStep('done');
-    } catch(e:any) { setError(e.message || 'Failed'); setStep('notfound'); }
+      const w = { address: data.address, walletId: data.walletId, email }; saveWallet(w); await fetchBalance(data.walletId); setStep('done');
+    } catch (e:any) { setError(e.message || 'Failed'); setStep('notfound'); }
   };
 
   return (
@@ -97,62 +97,81 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
 
       {/* Login Modal */}
       {showLogin && !showCircle && (
-        <div className='v-modal-bg' onClick={closeAll}>
-          <div className='v-modal' style={{maxWidth:400}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
-              <div style={{fontFamily:"'Cormorant',serif",fontSize:28,fontWeight:300,color:'var(--w)'}}>Log In</div>
-              <button onClick={closeAll} style={{background:'transparent',border:'1px solid var(--b1)',color:'var(--w35)',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        <div className='pf-modal-bg' onClick={closeAll}>
+          <div className='pf-modal nv-modal' style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div className='nv-mhead'>
+              <div className='pf-modal-title'>Log in</div>
+              <button onClick={closeAll} className='v4-cart-x' aria-label='Close'>✕</button>
             </div>
-            <div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7,marginBottom:20}}>Choose how you want to connect to Vendra.</div>
-            <div style={{border:'1px solid var(--b1)',padding:'20px',marginBottom:12,background:'var(--bg3)',position:'relative',overflow:'hidden'}}>
-              <div style={{position:'absolute',top:0,left:'20%',right:'20%',height:1,background:'linear-gradient(90deg,transparent,rgba(212,176,90,0.3),transparent)'}}/>
-              <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--a)',marginBottom:8}}>🦊 Web3 Wallet</div>
-              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:14,lineHeight:1.6}}>MetaMask, Coinbase, WalletConnect or any EVM wallet.</div>
-              <div style={{display:'flex',justifyContent:'center'}}><ConnectButton label='Connect Wallet' accountStatus='address' chainStatus='none' showBalance={false}/></div>
+            <p className='jn-sub' style={{ marginBottom: 18, textAlign: 'left' }}>Choose how you want to connect to Vendra.</p>
+            <div className='jn-card' style={{ marginBottom: 12 }}>
+              <div className='jn-card-l'>🦊 Web3 wallet</div>
+              <div className='jn-card-p'>MetaMask, Coinbase, WalletConnect or any EVM wallet.</div>
+              <div className='jn-connect'><ConnectButton label='Connect Wallet' accountStatus='address' chainStatus='none' showBalance={false} /></div>
             </div>
-            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}><div style={{flex:1,height:1,background:'var(--b1)'}}/><span style={{fontSize:9,fontWeight:300,fontStyle:'italic',color:'var(--w18)',letterSpacing:'0.14em',textTransform:'uppercase'}}>or</span><div style={{flex:1,height:1,background:'var(--b1)'}}/></div>
-            <div style={{border:'1px solid rgba(155,181,200,0.2)',padding:'20px',background:'rgba(155,181,200,0.03)',position:'relative',overflow:'hidden'}}>
-              <div style={{position:'absolute',top:0,left:'20%',right:'20%',height:1,background:'linear-gradient(90deg,transparent,rgba(155,181,200,0.3),transparent)'}}/>
-              <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--sl)',marginBottom:8}}>⭕ Circle Wallet</div>
-              <div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',marginBottom:14,lineHeight:1.6}}>No crypto experience needed. Verify your email to access your USDC wallet.</div>
-              <button onClick={()=>{setShowLogin(false);setShowCircle(true);}} className='btn-slate' style={{width:'100%',fontSize:10,padding:'12px'}}>Log In with Circle Wallet →</button>
+            <div className='vor' style={{ marginBottom: 12 }}><div className='vor-line' /><span className='vor-txt'>or</span><div className='vor-line' /></div>
+            <div className='jn-card'>
+              <div className='jn-card-l'>⭕ Circle wallet</div>
+              <div className='jn-card-p'>No crypto experience needed. Verify your email to access your USDC wallet.</div>
+              <button onClick={() => { setShowLogin(false); setShowCircle(true); }} className='v4btn v4btn-ink' style={{ width: '100%', justifyContent: 'center' }}>Log in with Circle wallet →</button>
             </div>
           </div>
         </div>)}
 
       {/* Circle Auth Modal */}
       {showCircle && (
-        <div className='v-modal-bg' onClick={closeAll}>
-          <div className='v-modal' style={{maxWidth:440}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div className='pf-modal-bg' onClick={closeAll}>
+          <div className='pf-modal nv-modal' style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            <div className='nv-mhead'>
               <div>
-                <div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--sl)',marginBottom:4}}>Circle · USDC Wallet</div>
-                <div style={{fontFamily:"'Cormorant',serif",fontSize:24,fontWeight:300,color:'var(--w)'}}>
-                  {step==='email'&&'Log In with Circle'}{step==='otp'&&'Enter Your Code'}{step==='checking'&&'Verifying...'}{step==='notfound'&&'Create Wallet'}{step==='creating'&&'Creating Wallet...'}{(step==='found'||step==='done')&&'Welcome Back ✓'}
+                <div className='jn-circle-l'>Circle · USDC Wallet</div>
+                <div className='jn-circle-h'>
+                  {step === 'email' && 'Log in with Circle'}{step === 'otp' && 'Enter your code'}{step === 'checking' && 'Verifying…'}{step === 'notfound' && 'Create wallet'}{step === 'creating' && 'Creating wallet…'}{(step === 'found' || step === 'done') && 'Welcome back ✓'}
                 </div>
               </div>
-              <button onClick={closeAll} style={{background:'transparent',border:'1px solid var(--b1)',color:'var(--w35)',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+              <button onClick={closeAll} className='v4-cart-x' aria-label='Close'>✕</button>
             </div>
-            {step==='email'&&(<><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.8,marginBottom:20}}>Enter your email. We'll send a verification code to confirm it's you.</div><div className='v-field'><label className='v-label'>Email Address</label><input className='v-input' type='email' placeholder='you@example.com' value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSendOtp()} autoFocus/></div>{error&&<div style={{fontSize:11,fontStyle:'italic',color:'var(--err)',marginBottom:12,border:'1px solid rgba(232,112,112,0.2)',padding:'8px 12px'}}>{error}</div>}<button onClick={handleSendOtp} disabled={loading} className='btn-primary' style={{width:'100%',padding:'14px',fontSize:11,marginBottom:10}}>{loading?'Sending code...':'Send Verification Code →'}</button><button onClick={()=>{setShowCircle(false);setShowLogin(true);}} style={{width:'100%',background:'transparent',border:'none',fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',cursor:'pointer',padding:'8px'}}>← Back to options</button></>)}
-            {step==='otp'&&(<><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.8,marginBottom:8}}>Code sent to <strong style={{color:'var(--w)'}}>{email}</strong>. Check inbox and spam.</div><div style={{fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',marginBottom:20,letterSpacing:'0.06em'}}>Expires in 10 minutes.</div><div className='v-field'><label className='v-label'>6-Digit Code</label><input className='v-input' type='text' inputMode='numeric' maxLength={6} placeholder='000000' value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,''))} onKeyDown={e=>e.key==='Enter'&&handleVerifyOtp()} autoFocus style={{letterSpacing:'0.3em',fontSize:22,textAlign:'center'}}/></div>{error&&<div style={{fontSize:11,fontStyle:'italic',color:'var(--err)',marginBottom:12,border:'1px solid rgba(232,112,112,0.2)',padding:'8px 12px'}}>{error}</div>}<button onClick={handleVerifyOtp} disabled={loading||otp.length!==6} className='btn-primary' style={{width:'100%',padding:'14px',fontSize:11,marginBottom:10}}>{loading?'Verifying...':'Verify & Continue →'}</button><div style={{display:'flex',justifyContent:'space-between'}}><button onClick={()=>{setStep('email');setOtp('');setError('');}} style={{background:'transparent',border:'none',fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',cursor:'pointer',padding:'8px 0'}}>← Change email</button><button onClick={resendTimer===0?handleSendOtp:undefined} disabled={resendTimer>0} style={{background:'transparent',border:'none',fontSize:10,fontWeight:300,fontStyle:'italic',color:resendTimer>0?'var(--w18)':'var(--a)',cursor:resendTimer>0?'not-allowed':'pointer',padding:'8px 0'}}>{resendTimer>0?`Resend in ${resendTimer}s`:'Resend code'}</button></div></>)}
-            {step==='checking'&&<div style={{textAlign:'center',padding:'24px 0'}}><div className='v-spinner' style={{margin:'0 auto 16px'}}/><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)'}}>Verifying...</div></div>}
-            {step==='notfound'&&(<><div style={{border:'1px solid var(--b1)',padding:'16px',marginBottom:20,background:'var(--bg3)'}}><div style={{fontSize:11,fontWeight:300,fontStyle:'italic',color:'var(--w35)',lineHeight:1.7}}>No wallet found for <strong style={{color:'var(--w)'}}>{email}</strong>. Create one?</div></div>{error&&<div style={{fontSize:11,fontStyle:'italic',color:'var(--err)',marginBottom:12,border:'1px solid rgba(232,112,112,0.2)',padding:'8px 12px'}}>{error}</div>}<button onClick={handleCreate} className='btn-primary' style={{width:'100%',padding:'14px',fontSize:11,marginBottom:10}}>Create New Circle Wallet →</button><button onClick={()=>setStep('email')} style={{width:'100%',background:'transparent',border:'none',fontSize:10,fontWeight:300,fontStyle:'italic',color:'var(--w18)',cursor:'pointer',padding:'8px'}}>← Try different email</button></>)}
-            {step==='creating'&&<div style={{textAlign:'center',padding:'24px 0'}}><div className='v-spinner' style={{margin:'0 auto 16px'}}/><div style={{fontSize:12,fontWeight:300,fontStyle:'italic',color:'var(--w35)'}}>Creating wallet...</div></div>}
-            {(step==='found'||step==='done')&&circleWallet&&(
-              <CircleWalletDashboard wallet={circleWallet} balance={balance} onLogout={()=>{logout();closeAll();}} onClose={closeAll}/>
+            {step === 'email' && (<>
+              <p className='jn-p'>Enter your email. We’ll send a verification code to confirm it’s you.</p>
+              <div className='ob-field'><label className='ob-label'>Email address</label><input className='ob-input' type='email' placeholder='you@example.com' value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendOtp()} autoFocus /></div>
+              {error && <div className='jn-err'>{error}</div>}
+              <button onClick={handleSendOtp} disabled={loading} className='v4btn v4btn-amber jn-cta'>{loading ? 'Sending code…' : 'Send verification code →'}</button>
+              <button onClick={() => { setShowCircle(false); setShowLogin(true); }} className='jn-link-btn' style={{ width: '100%' }}>← Back to options</button>
+            </>)}
+            {step === 'otp' && (<>
+              <p className='jn-p'>Code sent to <strong>{email}</strong>. Check inbox and spam.</p>
+              <div style={{ fontSize: 11, color: 'var(--v4-tx40)', marginBottom: 18 }}>Expires in 10 minutes.</div>
+              <div className='ob-field'><label className='ob-label'>6-digit code</label><input className='ob-input jn-otp-input' type='text' inputMode='numeric' maxLength={6} placeholder='000000' value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} autoFocus /></div>
+              {error && <div className='jn-err'>{error}</div>}
+              <button onClick={handleVerifyOtp} disabled={loading || otp.length !== 6} className='v4btn v4btn-amber jn-cta'>{loading ? 'Verifying…' : 'Verify & continue →'}</button>
+              <div className='jn-link-row'>
+                <button onClick={() => { setStep('email'); setOtp(''); setError(''); }} className='jn-link-btn'>← Change email</button>
+                <button onClick={resendTimer === 0 ? handleSendOtp : undefined} disabled={resendTimer > 0} className='jn-link-btn' style={resendTimer === 0 ? { color: 'var(--v4-aDeep)' } : undefined}>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}</button>
+              </div>
+            </>)}
+            {step === 'checking' && <div className='jn-spin'><div className='v4spinner' style={{ margin: '0 auto' }} /><div className='jn-spin-p'>Verifying…</div></div>}
+            {step === 'notfound' && (<>
+              <div style={{ border: '1px solid var(--v4-line)', borderRadius: 10, padding: 14, marginBottom: 18, background: 'var(--v4-paper2)' }}><div style={{ fontSize: 12.5, color: 'var(--v4-tx60)', lineHeight: 1.7 }}>No wallet found for <strong>{email}</strong>. Create one?</div></div>
+              {error && <div className='jn-err'>{error}</div>}
+              <button onClick={handleCreate} className='v4btn v4btn-amber jn-cta'>Create new Circle wallet →</button>
+              <button onClick={() => setStep('email')} className='jn-link-btn' style={{ width: '100%' }}>← Try a different email</button>
+            </>)}
+            {step === 'creating' && <div className='jn-spin'><div className='v4spinner' style={{ margin: '0 auto' }} /><div className='jn-spin-p'>Creating wallet…</div></div>}
+            {(step === 'found' || step === 'done') && circleWallet && (
+              <CircleWalletDashboard wallet={circleWallet} balance={balance} onLogout={() => { logout(); closeAll(); }} onClose={closeAll} />
             )}
           </div>
         </div>)}
 
-      {/* Circle Dashboard Modal — when already logged in */}
+      {/* Circle Dashboard Modal */}
       {showDashboard && circleWallet && (
-        <div className='v-modal-bg' onClick={closeAll}>
-          <div className='v-modal' style={{maxWidth:440}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
-              <div><div style={{fontSize:9,fontWeight:300,fontStyle:'italic',letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--sl)',marginBottom:4}}>Circle · USDC Wallet</div><div style={{fontFamily:"'Cormorant',serif",fontSize:20,fontWeight:300,color:'var(--w)'}}>{circleWallet.email}</div></div>
-              <button onClick={closeAll} style={{background:'transparent',border:'1px solid var(--b1)',color:'var(--w35)',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+        <div className='pf-modal-bg' onClick={closeAll}>
+          <div className='pf-modal nv-modal' style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            <div className='nv-mhead'>
+              <div><div className='jn-circle-l'>Circle · USDC Wallet</div><div className='jn-circle-h' style={{ fontSize: 18 }}>{circleWallet.email}</div></div>
+              <button onClick={closeAll} className='v4-cart-x' aria-label='Close'>✕</button>
             </div>
-            <CircleWalletDashboard wallet={circleWallet} balance={balance} onLogout={()=>{logout();closeAll();}} onClose={closeAll}/>
+            <CircleWalletDashboard wallet={circleWallet} balance={balance} onLogout={() => { logout(); closeAll(); }} onClose={closeAll} />
           </div>
         </div>)}
 
