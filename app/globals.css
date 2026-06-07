@@ -960,3 +960,8 @@ div.v4-cart-item-img{width:54px;height:54px;border-radius:10px;flex-shrink:0;bor
 .v4home .ob-done-p{font-size:14px;color:var(--v4-tx60);margin-bottom:32px;}
 .v4home .ob-done-actions{display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto;}
 @media(max-width:560px){.v4home .ob-roles{grid-template-columns:1fr;}.v4home .ob-wrap{padding-left:24px;padding-right:24px;}}
+
+/* === V4 EDIT-PROFILE STYLES === */
+.v4home .ob-success{border:1px solid rgba(123,176,130,.4);background:rgba(123,176,130,.10);border-radius:10px;padding:11px 16px;font-size:13px;color:#3F7A47;margin-bottom:16px;}
+.v4home .ob-backlink{display:inline-block;margin-top:14px;font-size:12px;color:var(--v4-tx40);text-decoration:none;}
+.v4home .ob-backlink:hover{color:var(--v4-ink);}
