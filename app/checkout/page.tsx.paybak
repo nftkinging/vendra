@@ -1,17 +1,16 @@
 'use client';
 import Nav from '../Nav';
 import Link from 'next/link';
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useSendTransaction } from 'wagmi';
+import { useAccount, useSendTransaction } from 'wagmi';
 import { parseUnits } from 'viem';
-import { saveOrder, createEscrowJob, getProfile } from '../lib/supabase';
-import { useVendraWallet } from '../lib/useVendraWallet';
+import { saveOrder, createEscrowJob } from '../lib/supabase';
 
 function CheckoutContent() {
   const params = useSearchParams();
   const router = useRouter();
-  const { address, isCircle, circle, ready } = useVendraWallet();
+  const { address, isConnected } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
   const store = params.get('store') || '';
   const product = params.get('product') || '';
@@ -22,37 +21,17 @@ function CheckoutContent() {
   const [step, setStep] = useState<'review'|'paying'|'success'|'error'>('review');
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');
-  const [gate, setGate] = useState<'checking'|'ok'|'need'>('checking');
-  const nextUrl = '/checkout?' + params.toString();
-
-  useEffect(() => {
-    if (!ready) return;
-    if (!address) { setGate('ok'); return; }
-    getProfile(address, 'buyer').then(p => setGate(p ? 'ok' : 'need')).catch(() => setGate('ok'));
-  }, [ready, address]);
 
   const handleBuy = async () => {
-    if (!address) { router.push('/join'); return; }
+    if (!isConnected || !address) { router.push('/join'); return; }
     setStep('paying');
     try {
-      let hash: string;
-      if (isCircle && circle) {
-        const res = await fetch('/api/circle/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletId: circle.walletId, walletAddress: address, toAddress: seller, amount: total.toString() }),
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        hash = 'circle:' + (data.txId || '');
-      } else {
-        hash = await sendTransactionAsync({ to: seller, value: parseUnits(total.toString(), 18) });
-      }
+      const hash = await sendTransactionAsync({ to: seller, value: parseUnits(total.toString(), 18) });
       const order = await saveOrder({ buyer_wallet: address, seller_wallet: seller, product_name: qty > 1 ? product + ' x' + qty : product, amount: total, tx_hash: hash });
       await createEscrowJob({ order_id: order?.id, buyer_wallet: address, seller_wallet: seller, amount: total, tx_hash: hash });
       setTxHash(hash); setStep('success');
     } catch (e: any) {
-      setError(e?.message?.includes('rejected') ? 'Transaction rejected in wallet' : (e?.message || 'Transaction failed — please try again'));
+      setError(e?.message?.includes('rejected') ? 'Transaction rejected in wallet' : 'Transaction failed — please try again');
       setStep('error');
     }
   };
@@ -79,19 +58,14 @@ function CheckoutContent() {
             </div>
           </div>
           <div className='co-escrow'><span className='co-dot' /><span>Funds are held in ERC-8183 escrow until you confirm delivery. 48-hour dispute window, full refund if the item is not as described.</span></div>
-          {gate === 'need' ? (<>
-            <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>You need a buyer profile to complete checkout — it takes a few seconds and lets you track your orders.</span></div>
-            <Link href={'/onboarding?role=buyer&next=' + encodeURIComponent(nextUrl)} className='v4btn v4btn-amber co-pay'>Create a buyer profile <span className='arr'>→</span></Link>
-          </>) : (
-            <button onClick={handleBuy} disabled={gate === 'checking'} className='v4btn v4btn-amber co-pay'>Pay {total} USDC on Arc <span className='arr'>→</span></button>
-          )}
+          <button onClick={handleBuy} className='v4btn v4btn-amber co-pay'>Pay {total} USDC on Arc <span className='arr'>→</span></button>
           <div className='co-back'><Link href={'/store/' + store}>← Back to store</Link></div>
         </>)}
         {step === 'paying' && (
           <div className='co-state'>
             <div className='v4spinner' style={{ margin: '0 auto 24px' }} />
             <h2 className='co-state-h'>Processing</h2>
-            <p className='co-state-p'>{isCircle ? 'Sending USDC from your Circle wallet…' : 'Approve the payment in your wallet…'}</p>
+            <p className='co-state-p'>Approve the payment in your wallet…</p>
           </div>)}
         {step === 'success' && (
           <div className='co-state'>

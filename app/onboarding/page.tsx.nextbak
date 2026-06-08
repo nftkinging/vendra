@@ -12,7 +12,7 @@ function OnboardingContent() {
   const params = useSearchParams();
   const avatarRef = useRef<HTMLInputElement>(null);
   const [role, setRole] = useState<'buyer'|'seller'>(params.get('role') === 'seller' ? 'seller' : 'buyer');
-  const [step, setStep] = useState<'role'|'profile'|'done'>(params.get('next') ? 'profile' : 'role');
+  const [step, setStep] = useState<'role'|'profile'|'done'>('role');
   const [form, setForm] = useState({ display_name: '', bio: '', x_handle: '' });
   const [avatarFile, setAvatarFile] = useState<File|null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -32,7 +32,6 @@ function OnboardingContent() {
       let avatar_url = '';
       if (avatarFile) avatar_url = await uploadAvatar(address, avatarFile);
       await saveProfile({ wallet_address: address, role, display_name: form.display_name, bio: form.bio, avatar_url, x_handle: form.x_handle });
-      if (params.get('next')) { router.replace(params.get('next')!); return; }
       setStep('done');
     } catch (e:any) { setError(e?.message || 'Something went wrong'); }
     finally { setLoading(false); }
