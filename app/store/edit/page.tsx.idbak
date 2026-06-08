@@ -1,7 +1,7 @@
 'use client';
 import Nav from '../../Nav';
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useVendraWallet } from '../../lib/useVendraWallet';
+import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getStoreByWallet, updateStore, saveProduct, deleteProduct, uploadImage } from '../../lib/supabase';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ const CATS = [{ icon: '👗', name: 'Fashion' }, { icon: '💾', name: 'Digital'
 const TYPES = ['Physical', 'Digital', 'Service'];
 
 function EditStoreContent() {
-  const { address, ready } = useVendraWallet();
+  const { address } = useAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
   const bannerRef = useRef<HTMLInputElement>(null);
@@ -33,7 +33,6 @@ function EditStoreContent() {
 
   useEffect(() => { if (searchParams.get('tab') === 'products') setTab('products'); }, [searchParams]);
   useEffect(() => {
-    if (!ready) return;
     if (!address) return;
     getStoreByWallet(address).then(s => {
       if (!s) { router.push('/store/create'); return; }
@@ -42,7 +41,7 @@ function EditStoreContent() {
       setBannerPreview(s.banner_url || '');
       setLoading(false);
     });
-  }, [address, ready, router]);
+  }, [address, router]);
 
   const handleSave = async () => {
     if (!form.name) { setError('Store name required'); return; }

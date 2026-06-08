@@ -1,13 +1,13 @@
 'use client';
 import Nav from '../Nav';
 import Link from 'next/link';
-import { useVendraWallet } from '../lib/useVendraWallet';
+import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, deleteStore, getStores } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function Profile() {
-  const { address, isConnected, ready } = useVendraWallet();
+  const { address, isConnected } = useAccount();
   const router = useRouter();
   const [sellerProfile, setSellerProfile] = useState<any>(null);
   const [buyerProfile, setBuyerProfile] = useState<any>(null);
@@ -21,7 +21,6 @@ export default function Profile() {
   const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
-    if (!ready) return;
     if (!isConnected || !address) { router.push('/'); return; }
     Promise.all([getAllProfiles(address), getStoreByWallet(address), getOrdersByBuyer(address), getOrdersBySeller(address), getStores()]).then(([all, s, bo, so, st]) => {
       const sp = all.find((p:any) => p.role === 'seller') || null;
@@ -30,7 +29,7 @@ export default function Profile() {
       if (sp) setView('seller'); else if (bp) setView('buyer');
       setLoading(false);
     });
-  }, [address, isConnected, ready, router]);
+  }, [address, isConnected, router]);
 
   const handleDeleteStore = async () => {
     if (!store) return; setDeleting(true);
