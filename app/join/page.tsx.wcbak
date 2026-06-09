@@ -26,7 +26,7 @@ export default function Join() {
   const [mode, setMode] = useState<'options'|'circle'>('options');
   const [resendTimer, setResendTimer] = useState(0);
 
-  useEffect(() => { if (isConnected) router.push('/welcome'); }, [isConnected, router]);
+  useEffect(() => { if (isConnected) router.push('/onboarding'); }, [isConnected, router]);
   useEffect(() => { try { const saved = sessionStorage.getItem(STORAGE_KEY); if (saved) { const w = JSON.parse(saved); setCircleWallet(w); fetchBalance(w.walletId); setMode('circle'); setStep('found'); } } catch {} }, []);
   useEffect(() => { if (resendTimer > 0) { const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000); return () => clearTimeout(t); } }, [resendTimer]);
 

@@ -8,31 +8,28 @@ type CircleWallet = { address: string; walletId: string; email: string };
 /**
  * Unified wallet identity for Vendra.
  * Returns the connected web3 (wagmi) address when present, otherwise the
- * Circle wallet address saved in sessionStorage — so Circle-login users
- * behave exactly like web3 users.
+ * Circle wallet address saved in sessionStorage. This lets Circle-login
+ * users buy, sell and own profiles exactly like web3 users.
  *
- * `ready` is true only once BOTH are settled: sessionStorage has been read,
- * and wagmi has finished (re)connecting. Redirect-gated pages should wait
- * for `ready` so they don't flash /join on a hard refresh.
+ * `ready` is true once sessionStorage has been read on the client — pages
+ * that redirect when disconnected should wait for `ready` before deciding.
  */
 export function useVendraWallet() {
-  const { address: wagmiAddress, isConnected: wagmiConnected, status } = useAccount();
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
   const [circle, setCircle] = useState<CircleWallet | null>(null);
-  const [sessionRead, setSessionRead] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const s = sessionStorage.getItem(STORAGE_KEY);
       setCircle(s ? JSON.parse(s) : null);
     } catch { setCircle(null); }
-    setSessionRead(true);
+    setReady(true);
   }, []);
 
   const usingWagmi = wagmiConnected && !!wagmiAddress;
   const address = (usingWagmi ? wagmiAddress : circle?.address) as `0x${string}` | undefined;
   const isConnected = !!address;
-  const wagmiSettling = status === 'connecting' || status === 'reconnecting';
-  const ready = sessionRead && !wagmiSettling;
 
   return { address, isConnected, isCircle: !usingWagmi && !!circle, circle, ready };
 }
