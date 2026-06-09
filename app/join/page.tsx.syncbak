@@ -30,8 +30,8 @@ export default function Join() {
   useEffect(() => { try { const saved = sessionStorage.getItem(STORAGE_KEY); if (saved) { const w = JSON.parse(saved); setCircleWallet(w); fetchBalance(w.walletId); setMode('circle'); setStep('found'); } } catch {} }, []);
   useEffect(() => { if (resendTimer > 0) { const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000); return () => clearTimeout(t); } }, [resendTimer]);
 
-  const saveWallet = (w: any) => { setCircleWallet(w); try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(w)); window.dispatchEvent(new Event('vendra-circle-change')); } catch {} };
-  const logout = () => { setCircleWallet(null); try { sessionStorage.removeItem(STORAGE_KEY); window.dispatchEvent(new Event('vendra-circle-change')); } catch {} setMode('options'); setStep('email'); setEmail(''); };
+  const saveWallet = (w: any) => { setCircleWallet(w); try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(w)); } catch {} };
+  const logout = () => { setCircleWallet(null); try { sessionStorage.removeItem(STORAGE_KEY); } catch {} setMode('options'); setStep('email'); setEmail(''); };
   const fetchBalance = async (walletId: string) => { try { const res = await fetch('/api/circle/balance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ walletId }) }); const data = await res.json(); setBalance(data.balance || '0'); } catch {} };
   const handleCopy = () => { if (!circleWallet) return; navigator.clipboard.writeText(circleWallet.address); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 

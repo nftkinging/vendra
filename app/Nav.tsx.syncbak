@@ -37,24 +37,11 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
   }, []);
 
   useEffect(() => {
-    const sync = () => {
-      try {
-        const saved = sessionStorage.getItem(STORAGE_KEY);
-        if (saved) { const w = JSON.parse(saved); setCircleWallet(w); fetchBalance(w.walletId); }
-        else setCircleWallet(null);
-      } catch { setCircleWallet(null); }
-    };
-    window.addEventListener('vendra-circle-change', sync);
-    window.addEventListener('storage', sync);
-    return () => { window.removeEventListener('vendra-circle-change', sync); window.removeEventListener('storage', sync); };
-  }, []);
-
-  useEffect(() => {
     if (resendTimer > 0) { const t = setTimeout(() => setResendTimer(r => r - 1), 1000); return () => clearTimeout(t); }
   }, [resendTimer]);
 
-  const saveWallet = (w: CircleWallet) => { setCircleWallet(w); try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(w)); window.dispatchEvent(new Event('vendra-circle-change')); } catch {} };
-  const logout = () => { setCircleWallet(null); try { sessionStorage.removeItem(STORAGE_KEY); window.dispatchEvent(new Event('vendra-circle-change')); } catch {} setShowDashboard(false); setShowCircle(false); };
+  const saveWallet = (w: CircleWallet) => { setCircleWallet(w); try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(w)); } catch {} };
+  const logout = () => { setCircleWallet(null); try { sessionStorage.removeItem(STORAGE_KEY); } catch {} setShowDashboard(false); setShowCircle(false); };
   const closeAll = () => { setShowLogin(false); setShowCircle(false); setShowDashboard(false); setStep('email'); setError(''); setOtp(''); };
   const shortAddr = (addr: string) => addr ? addr.slice(0,6) + '...' + addr.slice(-4) : '';
 
