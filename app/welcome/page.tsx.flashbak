@@ -6,10 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useVendraWallet } from '../lib/useVendraWallet';
 import { getProfile } from '../lib/supabase';
 
-// How long to wait for a web3 wallet to finish reconnecting after a refresh
-// before concluding the visitor is logged out and sending them to /join.
-const RECONNECT_GRACE_MS = 4000;
-
 export default function Welcome() {
   const router = useRouter();
   const { address, ready } = useVendraWallet();
@@ -19,30 +15,20 @@ export default function Welcome() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!address) {
-      // wagmi may still be reconnecting after a refresh; wait before bailing
-      const t = setTimeout(() => router.replace('/join'), RECONNECT_GRACE_MS);
-      return () => clearTimeout(t);
-    }
-    let cancelled = false;
+    if (!address) { router.replace('/join'); return; }
     Promise.all([getProfile(address, 'buyer'), getProfile(address, 'seller')])
       .then(([b, s]) => {
-        if (cancelled) return;
         if (!b && !s) { router.replace('/onboarding'); return; }
         setHasBuyer(!!b); setHasSeller(!!s); setShown(true);
       })
-      .catch(() => { if (!cancelled) router.replace('/onboarding'); });
-    return () => { cancelled = true; };
+      .catch(() => router.replace('/onboarding'));
   }, [ready, address, router]);
 
   if (!shown) return (
     <main className='v4home wc-main'>
       <Nav theme='v4' />
       <div className='amb'><div className='amb-glow' /><div className='amb-grid' /><div className='amb-line' /></div>
-      <div className='wc-in'>
-        <div className='v4spinner' style={{ margin: '120px auto 16px' }} />
-        <p className='wc-sub' style={{ marginTop: 0 }}>One moment…</p>
-      </div>
+      <div className='wc-in'><div className='v4spinner' style={{ margin: '120px auto' }} /></div>
     </main>
   );
 
