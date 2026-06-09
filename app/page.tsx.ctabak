@@ -1,10 +1,10 @@
 'use client';
 import Nav from './Nav';
 import Link from 'next/link';
-import { useVendraWallet } from './lib/useVendraWallet';
+import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { getStores } from './lib/supabase';
+import { getAllProfiles, getStoreByWallet, getStores } from './lib/supabase';
 
 const PRODUCTS = [
   { n:'Air Jordan 1 "Chicago"', s:'kicksbyleo', c:'Sneakers', p:'182', v:true, g:'linear-gradient(150deg,#c0392b,#7d2018)', img:'/showcase/sneakers.jpg' },
@@ -24,17 +24,29 @@ const TXNS = [
 ];
 
 export default function Home() {
-  const { isConnected } = useVendraWallet();
+  const { address, isConnected } = useAccount();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [activeChip, setActiveChip] = useState('All');
   const [featured, setFeatured] = useState<any[]>([]);
   const globeRef = useRef<HTMLCanvasElement>(null);
 
-  const handleGetStarted = () => {
-    // Delegate to the /welcome hub: it handles web3 + Circle, decides
-    // join / onboarding / chooser, and rides out the wallet reconnect.
-    if (isConnected) router.push('/welcome');
-    else router.push('/join');
+  const handleGetStarted = async () => {
+    try {
+      const saved = sessionStorage.getItem('vendra_circle_wallet');
+      if (saved) { router.push('/onboarding'); return; }
+    } catch {}
+    if (!isConnected) { router.push('/join'); return; }
+    setLoading(true);
+    try {
+      const [profiles, store] = await Promise.all([getAllProfiles(address!), getStoreByWallet(address!)]);
+      const hasSeller = profiles.some((p:any) => p.role==='seller');
+      const hasBuyer = profiles.some((p:any) => p.role==='buyer');
+      if (hasSeller && hasBuyer) router.push('/welcome');
+      else if (hasSeller || hasBuyer) router.push('/profile');
+      else router.push('/onboarding');
+    } catch { router.push('/onboarding'); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -95,7 +107,7 @@ export default function Home() {
           <h1 className='hl d2'>Sell anything.<br/><span className='v4amber'>Keep all of it.</span></h1>
           <p className='hero-sub hl d3'>The peer-to-peer marketplace with <strong>0% platform fees</strong>, instant USDC payouts, and fraud protection written into the protocol — not the fine print.</p>
           <div className='hero-actions hl d4'>
-            <button className='v4btn v4btn-amber' onClick={handleGetStarted}>Start selling <span className='arr'>→</span></button>
+            <button className='v4btn v4btn-amber' onClick={handleGetStarted} disabled={loading}>{loading ? 'Loading…' : 'Start selling'} <span className='arr'>→</span></button>
             <Link href='/marketplace' className='v4btn v4btn-ghost' style={{ color:'#fff', borderColor:'rgba(255,255,255,.32)' }}>Explore the market</Link>
           </div>
         </div>
