@@ -22,7 +22,6 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [circleWallet, setCircleWallet] = useState<CircleWallet|null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [balance, setBalance] = useState('0');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -205,25 +204,6 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
                 </button>
               : <button onClick={()=>setShowLogin(true)} className='btn-nav-amber'>Log In</button>}
         </div>
-        <div className='v-nav-mobile-bar'>
-          <CartButton/>
-          <button className='v-nav-burger' onClick={() => setMenuOpen(o => !o)} aria-label='Menu'>{menuOpen ? '✕' : '☰'}</button>
-        </div>
-        {menuOpen && (
-          <div className='v-nav-mobile'>
-            <Link href='/marketplace' onClick={() => setMenuOpen(false)}>Marketplace</Link>
-            <Link href='/store/create' onClick={() => setMenuOpen(false)}>Sell</Link>
-            {(isConnected || (mounted && circleWallet)) && <Link href='/profile' onClick={() => setMenuOpen(false)}>Profile</Link>}
-            <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' onClick={() => setMenuOpen(false)}>💧 Faucet</a>
-            <div className='v-nav-mobile-wallet'>
-              {isConnected
-                ? <ConnectButton accountStatus='address' chainStatus='none' showBalance={false}/>
-                : mounted && circleWallet
-                  ? <button onClick={() => { setShowDashboard(true); fetchBalance(circleWallet.walletId); setMenuOpen(false); }} className='btn-nav-amber' style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><span>⭕</span><span>{shortAddr(circleWallet.address)}</span></button>
-                  : <button onClick={() => { setShowLogin(true); setMenuOpen(false); }} className='btn-nav-amber'>Log In</button>}
-            </div>
-          </div>
-        )}
       </nav>
     </>
   );
