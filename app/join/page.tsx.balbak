@@ -158,7 +158,7 @@ export default function Join() {
                 <div className='jn-wallet-l'>Circle wallet · Arc Testnet</div>
                 <div className='jn-addr-row'><div className='jn-addr'>{circleWallet.address}</div><button onClick={handleCopy} className={'jn-copy' + (copied ? ' done' : '')}>{copied ? '✓ Copied' : 'Copy'}</button></div>
                 <div className='jn-bal-row'>
-                  <div><div className='jn-wallet-l' style={{ marginBottom: 2 }}>USDC balance</div><div className='jn-bal'>${parseFloat(balance || '0').toFixed(2)}</div></div>
+                  <div><div className='jn-wallet-l' style={{ marginBottom: 2 }}>USDC balance</div><div className='jn-bal'>${balance}</div></div>
                   <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' className='v4btn v4btn-ghost' style={{ fontSize: 10, padding: '8px 12px' }}>Get USDC ↗</a>
                 </div>
               </div>

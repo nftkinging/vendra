@@ -1170,3 +1170,7 @@ div.v4-cart-item-img{width:54px;height:54px;border-radius:10px;flex-shrink:0;bor
   .v-nav-mobile-wallet .btn-nav-amber{width:100%;justify-content:center;padding:14px;font-size:15px;}
   .v-nav-mobile-wallet [data-rk]{width:100%;}
 }
+
+/* === V4 JOIN BALANCE FIX === */
+.v4home .jn-bal{overflow-wrap:anywhere;max-width:100%;}
+@media(max-width:560px){ .v4home .jn-bal{font-size:24px;} }
