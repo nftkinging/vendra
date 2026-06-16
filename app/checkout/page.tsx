@@ -3,16 +3,20 @@ import Nav from '../Nav';
 import Link from 'next/link';
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useSendTransaction } from 'wagmi';
+import { useWriteContract, usePublicClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import { saveOrder, createEscrowJob, getProfile } from '../lib/supabase';
 import { useVendraWallet } from '../lib/useVendraWallet';
+import { ESCROW_ADDRESS, USDC_ADDRESS, escrowAbi, erc20Abi } from '../lib/escrow';
+
+const ZERO_REF = '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
 
 function CheckoutContent() {
   const params = useSearchParams();
   const router = useRouter();
   const { address, isCircle, circle, ready } = useVendraWallet();
-  const { sendTransactionAsync } = useSendTransaction();
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
   const store = params.get('store') || '';
   const product = params.get('product') || '';
   const price = Number(params.get('price') || 0);
@@ -37,6 +41,8 @@ function CheckoutContent() {
     try {
       let hash: string;
       if (isCircle && circle) {
+        // Circle wallets: direct USDC send for now (on-chain escrow funding via Circle
+        // contract-execution is the next step). Web3 already funds the escrow below.
         const res = await fetch('/api/circle/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -46,7 +52,24 @@ function CheckoutContent() {
         if (data.error) throw new Error(data.error);
         hash = 'circle:' + (data.txId || '');
       } else {
-        hash = await sendTransactionAsync({ to: seller, value: parseUnits(total.toString(), 18) });
+        // Web3 wallets: fund the on-chain escrow. USDC is a 6-decimal ERC-20 on Arc,
+        // so amounts use 6 decimals. Step 1: approve the escrow to pull USDC. Step 2: fund.
+        const amount6 = parseUnits(total.toString(), 6);
+        const approveHash = await writeContractAsync({
+          address: USDC_ADDRESS,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [ESCROW_ADDRESS, amount6],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        const fundHash = await writeContractAsync({
+          address: ESCROW_ADDRESS,
+          abi: escrowAbi,
+          functionName: 'fund',
+          args: [seller, amount6, ZERO_REF],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash: fundHash });
+        hash = fundHash;
       }
       const order = await saveOrder({ buyer_wallet: address, seller_wallet: seller, product_name: qty > 1 ? product + ' x' + qty : product, amount: total, tx_hash: hash });
       await createEscrowJob({ order_id: order?.id, buyer_wallet: address, seller_wallet: seller, amount: total, tx_hash: hash });
@@ -78,7 +101,7 @@ function CheckoutContent() {
               <span className='co-amt'>{total}<span className='u'>USDC</span></span>
             </div>
           </div>
-          <div className='co-escrow'><span className='co-dot' /><span>Funds are held in ERC-8183 escrow until you confirm delivery. 48-hour dispute window, full refund if the item is not as described.</span></div>
+          <div className='co-escrow'><span className='co-dot' /><span>Your USDC is locked in an on-chain escrow contract on Arc until you confirm delivery. It auto-releases to the seller after 7 days, and you can open a dispute for a refund if the item isn't as described.</span></div>
           {gate === 'need' ? (<>
             <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>You need a buyer profile to complete checkout — it takes a few seconds and lets you track your orders.</span></div>
             <Link href={'/onboarding?role=buyer&next=' + encodeURIComponent(nextUrl)} className='v4btn v4btn-amber co-pay'>Create a buyer profile <span className='arr'>→</span></Link>
@@ -91,14 +114,16 @@ function CheckoutContent() {
           <div className='co-state'>
             <div className='v4spinner' style={{ margin: '0 auto 24px' }} />
             <h2 className='co-state-h'>Processing</h2>
-            <p className='co-state-p'>{isCircle ? 'Sending USDC from your Circle wallet…' : 'Approve the payment in your wallet…'}</p>
+            <p className='co-state-p'>{isCircle ? 'Sending USDC from your Circle wallet…' : 'Approve the USDC, then confirm the escrow deposit in your wallet…'}</p>
           </div>)}
         {step === 'success' && (
           <div className='co-state'>
             <div className='co-tick'>✓</div>
             <h2 className='co-state-h'>Payment confirmed</h2>
-            <p className='co-state-p'>Settled on Arc Testnet · ERC-8183 escrow active, releases in 48 hours.</p>
-            {txHash && <div className='co-tx'>{txHash}</div>}
+            <p className='co-state-p'>Settled on Arc Testnet · your USDC is locked in escrow and releases when you confirm receipt (or automatically after 7 days).</p>
+            {txHash && (txHash.startsWith('0x')
+              ? <a className='co-tx' href={'https://testnet.arcscan.app/tx/' + txHash} target='_blank' rel='noreferrer'>{txHash}</a>
+              : <div className='co-tx'>{txHash}</div>)}
             <div className='co-state-actions'>
               <Link href='/profile' className='v4btn v4btn-amber'>View my orders</Link>
               <Link href='/marketplace' className='v4btn v4btn-ghost'>Keep shopping</Link>

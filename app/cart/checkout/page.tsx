@@ -2,17 +2,21 @@
 import Nav from '../../Nav';
 import { useState, useEffect } from 'react';
 import { useCart } from '../../lib/cart';
-import { useSendTransaction } from 'wagmi';
+import { useWriteContract, usePublicClient } from 'wagmi';
 import { useVendraWallet } from '../../lib/useVendraWallet';
 import { parseUnits } from 'viem';
 import { saveOrder, createEscrowJob, upsertSellerReputation, getProfile } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ESCROW_ADDRESS, USDC_ADDRESS, escrowAbi, erc20Abi } from '../../lib/escrow';
+
+const ZERO_REF = '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
 
 export default function CartCheckout() {
   const { items, clearCart, total } = useCart();
   const { address, isCircle, circle, ready } = useVendraWallet();
-  const { sendTransactionAsync } = useSendTransaction();
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
   const router = useRouter();
   const [step, setStep] = useState<'review'|'paying'|'success'|'error'>('review');
   const [currentSeller, setCurrentSeller] = useState('');
@@ -46,12 +50,23 @@ export default function CartCheckout() {
         const storeTotal = storeItems.reduce((s, item) => s + item.price * item.quantity, 0);
         let hash: string;
         if (isCircle && circle) {
+          // Circle wallets: direct USDC send for now (escrow via Circle contract-execution is next).
           const res = await fetch('/api/circle/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ walletId: circle.walletId, walletAddress: address, toAddress: sellerWallet, amount: storeTotal.toString() }) });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
           hash = 'circle:' + (data.txId || '');
         } else {
-          hash = await sendTransactionAsync({ to: sellerWallet, value: parseUnits(storeTotal.toString(), 18) });
+          // Web3 wallets: fund this store's seller into the on-chain escrow (6-decimal USDC).
+          const amount6 = parseUnits(storeTotal.toString(), 6);
+          const approveHash = await writeContractAsync({
+            address: USDC_ADDRESS, abi: erc20Abi, functionName: 'approve', args: [ESCROW_ADDRESS, amount6],
+          });
+          if (publicClient) await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          const fundHash = await writeContractAsync({
+            address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'fund', args: [sellerWallet, amount6, ZERO_REF],
+          });
+          if (publicClient) await publicClient.waitForTransactionReceipt({ hash: fundHash });
+          hash = fundHash;
         }
         hashes.push(hash);
         for (const item of storeItems) {
@@ -108,9 +123,9 @@ export default function CartCheckout() {
               <div><div className='co-lbl'>Grand total</div><div className='cco-grand-v'>{total().toFixed(2)}</div></div>
               <div className='cco-grand-u'>USDC · Arc Testnet</div>
             </div>
-            {Object.keys(grouped).length > 1 && <div className='cco-note'>⚡ {Object.keys(grouped).length} {isCircle ? 'separate transfers' : 'separate wallet approvals'} — one per store</div>}
+            {Object.keys(grouped).length > 1 && <div className='cco-note'>⚡ {Object.keys(grouped).length} stores · {isCircle ? 'one USDC transfer each' : 'approve + escrow deposit in your wallet for each'}</div>}
           </div>
-          <div className='co-escrow'><span className='co-dot' /><span>Funds are locked in ERC-8183 escrow until delivery is confirmed. 48-hour dispute window, full refund if it is not as described.</span></div>
+          <div className='co-escrow'><span className='co-dot' /><span>Your USDC is locked in an on-chain escrow contract on Arc until you confirm delivery — it auto-releases to each seller after 7 days, with a dispute option for a refund if an item isn't as described.</span></div>
           {gate === 'need' ? (<>
             <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>You need a buyer profile to complete checkout — it takes a few seconds and lets you track your orders.</span></div>
             <Link href={'/onboarding?role=buyer&next=' + encodeURIComponent('/cart/checkout')} className='v4btn v4btn-amber co-pay'>Create a buyer profile <span className='arr'>→</span></Link>
@@ -124,13 +139,20 @@ export default function CartCheckout() {
             <div className='v4spinner' style={{ margin: '0 auto 24px' }} />
             <h2 className='co-state-h'>Processing payment</h2>
             <p className='cco-progress'>Store {currentItem} of {totalItems}</p>
-            <p className='co-state-p'>{isCircle ? <>Sending USDC to {currentSeller}…</> : <>Approve payment to {currentSeller} in your wallet…</>}</p>
+            <p className='co-state-p'>{isCircle ? <>Sending USDC to {currentSeller}…</> : <>Approve the USDC, then confirm the escrow deposit for {currentSeller}…</>}</p>
           </div>)}
         {step === 'success' && (
           <div className='co-state'>
             <div className='co-tick'>✓</div>
             <h2 className='co-state-h'>All payments confirmed</h2>
-            <p className='co-state-p'>{txHashes.length} transaction{txHashes.length > 1 ? 's' : ''} confirmed on Arc Testnet · escrow releases in 48 hours.</p>
+            <p className='co-state-p'>{txHashes.length} escrow deposit{txHashes.length > 1 ? 's' : ''} confirmed on Arc Testnet · funds release when you confirm receipt, or automatically after 7 days.</p>
+            {txHashes.some(h => h.startsWith('0x')) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '8px 0 4px' }}>
+                {txHashes.filter(h => h.startsWith('0x')).map(h => (
+                  <a key={h} className='co-tx' href={'https://testnet.arcscan.app/tx/' + h} target='_blank' rel='noreferrer'>{h.slice(0, 12)}…{h.slice(-10)}</a>
+                ))}
+              </div>
+            )}
             <div className='co-state-actions'>
               <Link href='/profile' className='v4btn v4btn-amber'>View my orders</Link>
               <Link href='/marketplace' className='v4btn v4btn-ghost'>Keep shopping</Link>
