@@ -3,24 +3,28 @@ import Nav from '../../Nav';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { usePublicClient } from 'wagmi';
+import { parseEventLogs } from 'viem';
 import { supabase, getStores } from '../../lib/supabase';
-import ArcEscrowStatus from '../../components/ArcEscrowStatus';
+import { ESCROW_ADDRESS, escrowAbi } from '../../lib/escrow';
+
+const STATE = ['None', 'Funded', 'Shipped', 'Released', 'Refunded', 'Disputed'];
+const STATE_COLOR: Record<number, string> = { 1: '#B47E0E', 2: '#2563EB', 3: '#15803D', 4: '#6B7280', 5: '#B91C1C' };
 
 export default function OrderPage() {
   const params = useParams();
   const id = params.id as string;
+  const publicClient = usePublicClient();
   const [order, setOrder] = useState<any>(null);
-  const [escrow, setEscrow] = useState<any>(null);
   const [productImg, setProductImg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [chainState, setChainState] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
       const { data: o } = await supabase.from('orders').select('*').eq('id', id).single();
       setOrder(o);
       if (o) {
-        const { data: e } = await supabase.from('escrow_jobs').select('*').eq('order_id', id).single();
-        setEscrow(e);
         try {
           const stores = await getStores();
           const base = (o.product_name || '').replace(/\s+x\d+$/i, '');
@@ -35,6 +39,24 @@ export default function OrderPage() {
     };
     load();
   }, [id]);
+
+  // Read the real on-chain escrow state by recovering the order id from the fund tx hash.
+  useEffect(() => {
+    const readChain = async () => {
+      if (!order || !publicClient) return;
+      const hash = order.tx_hash as string | undefined;
+      if (!hash || !hash.startsWith('0x')) return;
+      try {
+        const receipt = await publicClient.getTransactionReceipt({ hash: hash as `0x${string}` });
+        const ev = parseEventLogs({ abi: escrowAbi, logs: receipt.logs, eventName: 'OrderFunded' });
+        const escrowId = (ev[0] as any)?.args?.id;
+        if (escrowId === undefined) return;
+        const o = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'getOrder', args: [escrowId] }) as any;
+        setChainState(Number(o.state));
+      } catch { /* leave as generic escrow copy */ }
+    };
+    readChain();
+  }, [order, publicClient]);
 
   if (loading) return <main className='v4home' style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Nav theme='v4' /><div className='v4spinner' /></main>;
 
@@ -69,9 +91,23 @@ export default function OrderPage() {
           </div>
         </div>
         <div style={{ margin: '16px 0' }}>
-          <ArcEscrowStatus orderId={id} status={escrow?.status || 'locked'} amount={Number(order.amount)} createdAt={order.created_at} />
+          <div className='co-escrow' style={{ background: 'var(--v4-aSoft, #FBF3DF)', display: 'block' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--v4-tx60, #6B6450)' }}>On-chain escrow</span>
+              {chainState !== null && <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: STATE_COLOR[chainState] || '#6B7280' }}>{STATE[chainState] || 'Active'}</span>}
+            </div>
+            <span style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--v4-ink, #1A1206)' }}>
+              {chainState === 1 && 'Your USDC is held in the Vendra escrow contract on Arc. It releases to the seller when you confirm receipt — or automatically after 7 days if you take no action.'}
+              {chainState === 2 && 'The seller marked this shipped. Confirm receipt to release the funds, or it auto-releases after 7 days. Not as described? Open a dispute for a refund.'}
+              {chainState === 3 && 'Funds have been released to the seller — this order is complete.'}
+              {chainState === 4 && 'Funds were refunded to the buyer.'}
+              {chainState === 5 && 'This order is in dispute and under Vendra arbitration.'}
+              {chainState === null && "Your payment is secured by Vendra's on-chain escrow on Arc — the seller is paid when you confirm receipt, it auto-releases after 7 days if you take no action, and you can open a dispute for a refund."}
+              {' '}<Link href='/escrow' style={{ color: 'var(--v4-aDeep, #B47E0E)', fontWeight: 600 }}>Manage on Escrow Orders →</Link>
+            </span>
+          </div>
         </div>
-        {order.tx_hash && (
+        {order.tx_hash && order.tx_hash.startsWith('0x') && (
           <a href={explorerUrl} target='_blank' rel='noopener noreferrer' className='ord-tx'>
             <div className='ord-tx-l'>Transaction hash · Arc Testnet</div>
             <div className='ord-tx-h'>{order.tx_hash}</div>
@@ -82,7 +118,7 @@ export default function OrderPage() {
           <Link href='/marketplace' className='v4btn v4btn-ghost'>Keep shopping</Link>
         </div>
       </div>
-      <footer className='ord-foot'><div className='ord-foot-brand'>Vendra</div><div className='ord-foot-copy'>ERC-8183 Escrow · Arc Testnet</div><div className='ord-foot-links'><Link href='/marketplace'>Marketplace</Link></div></footer>
+      <footer className='ord-foot'><div className='ord-foot-brand'>Vendra</div><div className='ord-foot-copy'>On-chain Escrow · Arc Testnet</div><div className='ord-foot-links'><Link href='/marketplace'>Marketplace</Link></div></footer>
     </main>
   );
 }
