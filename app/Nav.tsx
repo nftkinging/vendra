@@ -191,7 +191,7 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
 
       <nav className={theme === 'v4' ? 'v-nav v4nav' : 'v-nav'}>
         <Link href='/' className='v-logo'><div className='v-logo-emblem'><span className='v-logo-v'>V</span></div><span className='v-logo-name'>Vendra</span></Link>
-        <div className='v-nav-links'><Link href='/marketplace'>Marketplace</Link><Link href='/store/create'>Sell</Link>{(isConnected || (mounted && circleWallet)) && <Link href='/profile'>Profile</Link>}</div>
+        <div className='v-nav-links'><Link href='/marketplace'>Marketplace</Link><Link href='/store/create'>Sell</Link>{(isConnected || (mounted && circleWallet)) && <Link href='/profile'>Profile</Link>}{(isConnected || (mounted && circleWallet)) && <Link href='/escrow'>Escrow</Link>}</div>
         <div className='v-nav-right'>
           <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' style={{textDecoration:'none'}}><button className='btn-faucet'>💧 Faucet</button></a>
           <CartButton/>
@@ -214,6 +214,7 @@ export default function Nav({ theme = 'v3' }: { theme?: 'v3' | 'v4' }) {
             <Link href='/marketplace' onClick={() => setMenuOpen(false)}>Marketplace</Link>
             <Link href='/store/create' onClick={() => setMenuOpen(false)}>Sell</Link>
             {(isConnected || (mounted && circleWallet)) && <Link href='/profile' onClick={() => setMenuOpen(false)}>Profile</Link>}
+            {(isConnected || (mounted && circleWallet)) && <Link href='/escrow' onClick={() => setMenuOpen(false)}>Escrow</Link>}
             <a href='https://faucet.circle.com/' target='_blank' rel='noopener noreferrer' onClick={() => setMenuOpen(false)}>💧 Faucet</a>
             <div className='v-nav-mobile-wallet'>
               {isConnected
