@@ -15,7 +15,7 @@ const CONFIRM_WINDOW = 7 * 24 * 60 * 60;
 type Ord = { id: number; buyer: string; seller: string; amount: bigint; fundedAt: number; shippedAt: number; state: number };
 
 export default function EscrowOrders() {
-  const { address, ready } = useVendraWallet();
+  const { address, isCircle, circle, ready } = useVendraWallet();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [orders, setOrders] = useState<Ord[]>([]);
@@ -32,12 +32,15 @@ export default function EscrowOrders() {
       const nextNum = Number(nextId);
       const startNum = nextNum > 100 ? nextNum - 100 : 1;
       const mine: Ord[] = [];
-      for (let i = startNum; i < nextNum; i++) {
-        const o = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'getOrder', args: [BigInt(i)] }) as any;
-        const buyer = String(o.buyer); const seller = String(o.seller);
-        if (buyer.toLowerCase() === address.toLowerCase() || seller.toLowerCase() === address.toLowerCase()) {
-          mine.push({ id: i, buyer, seller, amount: o.amount as bigint, fundedAt: Number(o.fundedAt), shippedAt: Number(o.shippedAt), state: Number(o.state) });
-        }
+      for (let i = startNum; i <= nextNum; i++) {
+        try {
+          const o = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'getOrder', args: [BigInt(i)] }) as any;
+          if (Number(o.state) === 0) continue; // empty / not-yet-assigned id
+          const buyer = String(o.buyer); const seller = String(o.seller);
+          if (buyer.toLowerCase() === address.toLowerCase() || seller.toLowerCase() === address.toLowerCase()) {
+            mine.push({ id: i, buyer, seller, amount: o.amount as bigint, fundedAt: Number(o.fundedAt), shippedAt: Number(o.shippedAt), state: Number(o.state) });
+          }
+        } catch (e) { /* skip unreadable id */ }
       }
       setOrders(mine.reverse());
     } catch (e: any) { setErr(e?.shortMessage || e?.message || 'Could not load orders'); }
@@ -49,8 +52,17 @@ export default function EscrowOrders() {
   const act = async (fn: 'markShipped' | 'confirmReceipt' | 'raiseDispute' | 'reclaimUnshipped' | 'autoRelease', id: number) => {
     setBusy(id); setErr('');
     try {
-      const hash = await writeContractAsync({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: fn, args: [BigInt(id)] });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (isCircle && circle) {
+        const res = await fetch('/api/circle/escrow', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletId: circle.walletId, action: fn, id }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+      } else {
+        const hash = await writeContractAsync({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: fn, args: [BigInt(id)] });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
       await load();
     } catch (e: any) { setErr(e?.shortMessage || e?.message || 'Transaction failed'); }
     setBusy(null);

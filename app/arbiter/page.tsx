@@ -27,7 +27,7 @@ export default function ArbiterPage() {
       const nextBig = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'nextId' }) as bigint;
       const next = Number(nextBig);
       const found: Row[] = [];
-      for (let i = 1; i < next; i++) {
+      for (let i = 1; i <= next; i++) {
         try {
           const o = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'getOrder', args: [BigInt(i)] }) as { buyer: string; seller: string; amount: bigint; state: number };
           if (Number(o.state) === 5) found.push({ id: i, buyer: String(o.buyer), seller: String(o.seller), amount: o.amount as bigint });

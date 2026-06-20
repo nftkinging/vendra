@@ -24,7 +24,7 @@ const isImg = (u?: string) => !!u && /\.(png|jpe?g|gif|webp|avif)$/i.test(u);
 export default function DisputePage() {
   const params = useParams();
   const id = String(params?.id ?? '');
-  const { address, ready } = useVendraWallet();
+  const { address, isCircle, circle, ready } = useVendraWallet();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
@@ -93,10 +93,19 @@ export default function DisputePage() {
   const resolve = async (toBuyer: bigint) => {
     setBusy(true); setNote('');
     try {
-      const hash = await writeContractAsync({
-        address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'resolve', args: [BigInt(id), toBuyer],
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (isCircle && circle) {
+        const res = await fetch('/api/circle/escrow', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletId: circle.walletId, action: 'resolve', id, toBuyer: toBuyer.toString() }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+      } else {
+        const hash = await writeContractAsync({
+          address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'resolve', args: [BigInt(id), toBuyer],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
       await load();
     } catch (e) {
       const err = e as { shortMessage?: string; message?: string };

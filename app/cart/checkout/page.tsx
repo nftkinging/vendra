@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { ESCROW_ADDRESS, USDC_ADDRESS, escrowAbi, erc20Abi } from '../../lib/escrow';
 
 const ZERO_REF = '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
+const isFundsError = (m: string) => /insufficient|not enough|balance|funds|exceeds/i.test(m || '');
 
 export default function CartCheckout() {
   const { items, clearCart, total } = useCart();
@@ -18,12 +19,13 @@ export default function CartCheckout() {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
   const router = useRouter();
-  const [step, setStep] = useState<'review'|'paying'|'success'|'error'>('review');
+  const [step, setStep] = useState<'review'|'confirm'|'paying'|'success'|'error'|'nofunds'>('review');
   const [currentSeller, setCurrentSeller] = useState('');
   const [currentItem, setCurrentItem] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [txHashes, setTxHashes] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
   const [gate, setGate] = useState<'checking'|'ok'|'need'>('checking');
 
   useEffect(() => {
@@ -33,6 +35,27 @@ export default function CartCheckout() {
   }, [ready, address]);
 
   const grouped: Record<string,typeof items> = items.reduce((acc:any,item)=>{ if(!acc[item.storeSlug])acc[item.storeSlug]=[]; acc[item.storeSlug].push(item); return acc; },{});
+
+  // web3 goes straight to wallet popups; Circle does a balance pre-check then an
+  // explicit in-app confirmation (custodial wallets have no native popup).
+  const onPay = async () => {
+    if (!address) { router.push('/join'); return; }
+    if (items.length === 0) return;
+    if (!(isCircle && circle)) { handleCheckout(); return; }
+    setChecking(true); setError('');
+    try {
+      const res = await fetch('/api/circle/balance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletId: circle.walletId }),
+      });
+      const data = await res.json();
+      const bal = parseFloat(data.balance || '0');
+      if (bal < total()) { setStep('nofunds'); return; }
+      setStep('confirm');
+    } catch {
+      setStep('confirm');
+    } finally { setChecking(false); }
+  };
 
   const handleCheckout = async () => {
     if (!address) { router.push('/join'); return; }
@@ -50,11 +73,15 @@ export default function CartCheckout() {
         const storeTotal = storeItems.reduce((s, item) => s + item.price * item.quantity, 0);
         let hash: string;
         if (isCircle && circle) {
-          // Circle wallets: direct USDC send for now (escrow via Circle contract-execution is next).
-          const res = await fetch('/api/circle/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ walletId: circle.walletId, walletAddress: address, toAddress: sellerWallet, amount: storeTotal.toString() }) });
+          // Circle wallets: fund this store's seller into the on-chain escrow
+          // (approve + fund, server-signed). Returns the real on-chain tx hash.
+          const res = await fetch('/api/circle/escrow', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletId: circle.walletId, action: 'fund', seller: sellerWallet, amount: storeTotal.toString() }),
+          });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
-          hash = 'circle:' + (data.txId || '');
+          hash = data.txHash || ('circle:' + (data.fundTxId || ''));
         } else {
           // Web3 wallets: fund this store's seller into the on-chain escrow (6-decimal USDC).
           const amount6 = parseUnits(storeTotal.toString(), 6);
@@ -77,7 +104,9 @@ export default function CartCheckout() {
       }
       setTxHashes(hashes); clearCart(); setStep('success');
     } catch (e: any) {
-      setError(e?.message?.includes('rejected') ? 'Transaction rejected in wallet' : 'Transaction failed — please try again');
+      const msg = e?.message || '';
+      if (isFundsError(msg)) { setStep('nofunds'); return; }
+      setError(msg.includes('rejected') ? 'Transaction rejected in wallet' : 'Transaction failed — please try again');
       setStep('error');
     }
   };
@@ -123,23 +152,33 @@ export default function CartCheckout() {
               <div><div className='co-lbl'>Grand total</div><div className='cco-grand-v'>{total().toFixed(2)}</div></div>
               <div className='cco-grand-u'>USDC · Arc Testnet</div>
             </div>
-            {Object.keys(grouped).length > 1 && <div className='cco-note'>⚡ {Object.keys(grouped).length} stores · {isCircle ? 'one USDC transfer each' : 'approve + escrow deposit in your wallet for each'}</div>}
+            {Object.keys(grouped).length > 1 && <div className='cco-note'>⚡ {Object.keys(grouped).length} stores · {isCircle ? 'an escrow deposit each' : 'approve + escrow deposit in your wallet for each'}</div>}
           </div>
           <div className='co-escrow'><span className='co-dot' /><span>Your USDC is locked in an on-chain escrow contract on Arc until you confirm delivery — it auto-releases to each seller after 7 days, with a dispute option for a refund if an item isn't as described.</span></div>
           {gate === 'need' ? (<>
             <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>You need a buyer profile to complete checkout — it takes a few seconds and lets you track your orders.</span></div>
             <Link href={'/onboarding?role=buyer&next=' + encodeURIComponent('/cart/checkout')} className='v4btn v4btn-amber co-pay'>Create a buyer profile <span className='arr'>→</span></Link>
           </>) : (
-            <button onClick={handleCheckout} disabled={gate === 'checking'} className='v4btn v4btn-amber co-pay'>Pay {total().toFixed(2)} USDC on Arc <span className='arr'>→</span></button>
+            <button onClick={onPay} disabled={gate === 'checking' || checking} className='v4btn v4btn-amber co-pay'>{checking ? 'Checking your wallet…' : <>Pay {total().toFixed(2)} USDC on Arc <span className='arr'>→</span></>}</button>
           )}
           <div className='co-back'><Link href='/marketplace'>← Continue shopping</Link></div>
         </>)}
+        {step === 'confirm' && (
+          <div className='co-state'>
+            <p className='eyebrow'>Confirm payment</p>
+            <h2 className='co-state-h'>Pay {total().toFixed(2)} USDC from your Circle wallet?</h2>
+            <p className='co-state-p'>This locks your USDC in Vendra&apos;s on-chain escrow on Arc — one deposit per store ({Object.keys(grouped).length} total). Funds release to each seller when you confirm receipt, or automatically after 7 days, and you can dispute for a refund. A small gas fee (also in USDC) applies per deposit.</p>
+            <div className='co-state-actions'>
+              <button onClick={handleCheckout} className='v4btn v4btn-amber'>Confirm &amp; pay {total().toFixed(2)} USDC</button>
+              <button onClick={() => setStep('review')} className='v4btn v4btn-ghost'>Cancel</button>
+            </div>
+          </div>)}
         {step === 'paying' && (
           <div className='co-state'>
             <div className='v4spinner' style={{ margin: '0 auto 24px' }} />
             <h2 className='co-state-h'>Processing payment</h2>
             <p className='cco-progress'>Store {currentItem} of {totalItems}</p>
-            <p className='co-state-p'>{isCircle ? <>Sending USDC to {currentSeller}…</> : <>Approve the USDC, then confirm the escrow deposit for {currentSeller}…</>}</p>
+            <p className='co-state-p'>{isCircle ? <>Funding escrow for {currentSeller} — this can take a few seconds…</> : <>Approve the USDC, then confirm the escrow deposit for {currentSeller}…</>}</p>
           </div>)}
         {step === 'success' && (
           <div className='co-state'>
@@ -154,8 +193,18 @@ export default function CartCheckout() {
               </div>
             )}
             <div className='co-state-actions'>
-              <Link href='/profile' className='v4btn v4btn-amber'>View my orders</Link>
+              <Link href='/escrow' className='v4btn v4btn-amber'>View my orders</Link>
               <Link href='/marketplace' className='v4btn v4btn-ghost'>Keep shopping</Link>
+            </div>
+          </div>)}
+        {step === 'nofunds' && (
+          <div className='co-state'>
+            <div className='co-cross'>!</div>
+            <h2 className='co-state-h'>Not enough USDC</h2>
+            <p className='co-state-p'>Your Circle wallet doesn&apos;t have enough USDC to cover this {total().toFixed(2)} USDC order plus the small Arc gas fee (also paid in USDC). Top up your wallet and try again.</p>
+            <div className='co-state-actions'>
+              <a href='https://faucet.circle.com/' target='_blank' rel='noreferrer' className='v4btn v4btn-amber'>Get testnet USDC →</a>
+              <button onClick={() => setStep('review')} className='v4btn v4btn-ghost'>Back</button>
             </div>
           </div>)}
         {step === 'error' && (
