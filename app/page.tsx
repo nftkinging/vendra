@@ -187,16 +187,16 @@ export default function Home() {
             <div className='fcard'>
               <div className='fi'><svg viewBox='0 0 24 24'><path d='M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z'/><path d='m9 12 2 2 4-4'/></svg></div>
               <h3>Protected by code</h3>
-              <p>Every purchase is locked in an ERC-8183 escrow contract. Payment only releases when the buyer confirms delivery — so item-never-arrived scams simply can’t happen.</p>
+              <p>Every purchase is locked in an on-chain escrow contract. Payment only releases when the buyer confirms delivery — so item-never-arrived scams simply can’t happen.</p>
               <span className='stat-mini'>100%</span>
               <p style={{ marginTop: 6 }}>of orders escrow-backed</p>
             </div>
             <div className='fcard'>
               <div className='fi'><svg viewBox='0 0 24 24'><path d='M12 2v20M2 12h20'/><circle cx='12' cy='12' r='9'/></svg></div>
               <h3>A reputation you own</h3>
-              <p>Seller scores are minted on-chain via ERC-8004 — permanent, portable, impossible to fake or farm. Your track record follows you, forever.</p>
-              <span className='stat-mini'>Unfakeable</span>
-              <p style={{ marginTop: 6 }}>on-chain seller history</p>
+              <p>Your seller reputation is tied to your wallet and built from real, escrow-settled sales — not a number a platform can quietly edit. It moves with you.</p>
+              <span className='stat-mini'>Wallet-tied</span>
+              <p style={{ marginTop: 6 }}>reputation from real sales</p>
             </div>
             <div className='fcard'>
               <div className='fi'><svg viewBox='0 0 24 24'><path d='M3 12h18M3 6h18M3 18h18'/></svg></div>
@@ -211,8 +211,8 @@ export default function Home() {
 
       <section className='trust'>
         <div className='trust-wrap'>
-          <span className='t'>Built on Arc by Circle — the rails behind</span>
-          <div className='trust-logos'><span>Visa</span><span>Mastercard</span><span>BlackRock</span><span>Goldman Sachs</span><span>AWS</span></div>
+          <span className='t'>Built on Arc — Circle’s USDC-native blockchain</span>
+          <div className='trust-logos'><span>USDC native</span><span>Built on Arc</span><span>Circle wallets</span><span>On-chain escrow</span></div>
         </div>
       </section>
 
