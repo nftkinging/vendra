@@ -9,21 +9,33 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState('All');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 24;
 
   useEffect(() => {
     getStores().then(s => { setStores(s || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const items = stores.flatMap((s: any) => (s.products || []).map((p: any) => ({
-    id: p.id, name: p.name, price: p.price, image: p.image_url || '',
-    cat: s.category || 'Other', storeSlug: s.slug, storeName: s.name,
-  })));
+  useEffect(() => { setPage(1); }, [cat, search]);
+
+  // Complete stores (with a banner) lead; only list products that actually have
+  // an image, so empty/spam listings never render no matter how they got created.
+  const ranked = [...stores].sort((a: any, b: any) => (a.banner_url ? 0 : 1) - (b.banner_url ? 0 : 1));
+  const items = ranked.flatMap((s: any) => (s.products || [])
+    .filter((p: any) => p.image_url && String(p.image_url).trim())
+    .map((p: any) => ({
+      id: p.id, name: p.name, price: p.price, image: p.image_url || '',
+      cat: s.category || 'Other', storeSlug: s.slug, storeName: s.name,
+    })));
   const CATS = ['All', ...Array.from(new Set(items.map(i => i.cat)))];
   const filtered = items.filter(i =>
     (cat === 'All' || i.cat === cat) &&
     ((i.name || '').toLowerCase().includes(search.toLowerCase()) ||
      (i.storeName || '').toLowerCase().includes(search.toLowerCase()))
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const pageClamped = Math.min(page, totalPages);
+  const paged = filtered.slice((pageClamped - 1) * PER_PAGE, pageClamped * PER_PAGE);
 
   return (
     <main className='v4home'>
@@ -45,22 +57,31 @@ export default function Marketplace() {
         ) : filtered.length === 0 ? (
           <div className='v4empty'><h3>No listings yet</h3><p>Open a store and your products show up here instantly.</p></div>
         ) : (
-          <div className='v4grid' style={{ marginTop: 32 }}>
-            {filtered.map(i => (
-              <Link key={i.storeSlug + '-' + i.id} href={'/store/' + i.storeSlug + '/' + i.id} className='pcard'>
-                <div className='pc-img'>
-                  <span className='pc-badge'>{i.cat}</span>
-                  <img src={i.image} alt={i.name} loading='lazy' onError={(e) => { const d = e.currentTarget.parentElement; if (d) { d.classList.add('grad'); (d as HTMLElement).style.background = 'linear-gradient(150deg,#2c2c34,#16161a)'; } }} />
-                  <span className='ph-name'>{i.name}</span>
-                </div>
-                <div className='pc-body'>
-                  <div className='pc-name'>{i.name}</div>
-                  <div className='pc-seller'>{i.storeName}</div>
-                  <div className='pc-foot'><div className='pc-price'>{i.price}<span className='u'>USDC</span></div><span className='pc-buy'>View</span></div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <div className='v4grid' style={{ marginTop: 32 }}>
+              {paged.map(i => (
+                <Link key={i.storeSlug + '-' + i.id} href={'/store/' + i.storeSlug + '/' + i.id} className='pcard'>
+                  <div className='pc-img'>
+                    <span className='pc-badge'>{i.cat}</span>
+                    <img src={i.image} alt={i.name} loading='lazy' onError={(e) => { const d = e.currentTarget.parentElement; if (d) { d.classList.add('grad'); (d as HTMLElement).style.background = 'linear-gradient(150deg,#2c2c34,#16161a)'; } }} />
+                    <span className='ph-name'>{i.name}</span>
+                  </div>
+                  <div className='pc-body'>
+                    <div className='pc-name'>{i.name}</div>
+                    <div className='pc-seller'>{i.storeName}</div>
+                    <div className='pc-foot'><div className='pc-price'>{i.price}<span className='u'>USDC</span></div><span className='pc-buy'>View</span></div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 40 }}>
+                <button className='v4btn v4btn-ghost' disabled={pageClamped <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Prev</button>
+                <span style={{ fontSize: 14, color: 'var(--v4-tx60,#6B6256)' }}>Page {pageClamped} of {totalPages}</span>
+                <button className='v4btn v4btn-ghost' disabled={pageClamped >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next →</button>
+              </div>
+            )}
+          </>
         )}
       </section>
       <footer className='v4foot'>

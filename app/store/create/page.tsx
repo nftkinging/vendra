@@ -37,6 +37,10 @@ export default function CreateStore() {
   const storeUrl = 'https://vendramarket.xyz/store/' + slug;
   const tweet = 'I just deployed my store "' + form.name + '" on Arc Testnet!\n\n' + storeUrl + '\n\n#ArcTestnet #Web3 #Vendra';
 
+  // A store is only publishable when it's actually complete — name, tagline,
+  // description and a banner image. This blocks half-empty / spam stores.
+  const complete = !!(form.name.trim() && form.tagline.trim() && form.description.trim() && bannerFile);
+
   const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
     setBannerFile(f); setBannerPreview(URL.createObjectURL(f));
@@ -44,7 +48,10 @@ export default function CreateStore() {
 
   const handleCreate = async () => {
     if (!address) { setError('Please connect your wallet'); return; }
-    if (!form.name) { setError('Store name is required'); return; }
+    if (!form.name.trim()) { setError('Store name is required.'); return; }
+    if (!form.tagline.trim()) { setError('Add a tagline so buyers know what you sell.'); return; }
+    if (!form.description.trim()) { setError('Add a description for your store.'); return; }
+    if (!bannerFile) { setError('A store banner image is required.'); return; }
     setLoading(true); setError('');
     try {
       const existing = await getStoreByWallet(address);
@@ -101,12 +108,12 @@ export default function CreateStore() {
             <div className='sc-fee'><span className='sc-fee-dot' /><span className='sc-fee-txt'>{'Deployment fee: $'}{FEE}{' USDC · Arc Testnet'}</span></div>
 
             <div className='ob-card'>
-              <div className='ob-card-head'>Store banner</div>
+              <div className='ob-card-head'>Store banner *</div>
               <div className='ob-card-body'>
                 <input ref={bannerRef} type='file' accept='image/*' onChange={handleBanner} style={{ display: 'none' }} />
                 {bannerPreview
                   ? <div className='sc-banner-prev'><img src={bannerPreview} alt='banner' /><button onClick={() => bannerRef.current?.click()} className='sc-banner-change'>Change</button></div>
-                  : <div onClick={() => bannerRef.current?.click()} className='sc-banner-zone'><div className='sc-banner-ic'>🖼️</div><div className='sc-banner-label'>Click to upload banner</div><div className='sc-banner-hint'>Recommended: 1200×400px</div></div>}
+                  : <div onClick={() => bannerRef.current?.click()} className='sc-banner-zone'><div className='sc-banner-ic'>🖼️</div><div className='sc-banner-label'>Click to upload banner</div><div className='sc-banner-hint'>Required · recommended 1200×400px</div></div>}
               </div>
             </div>
 
@@ -114,8 +121,8 @@ export default function CreateStore() {
               <div className='ob-card-head'>Store identity</div>
               <div className='ob-card-body'>
                 <div className='ob-field'><label className='ob-label'>Store name *</label><input className='ob-input' type='text' placeholder='e.g. Nour Atelier' value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-                <div className='ob-field'><label className='ob-label'>Tagline</label><input className='ob-input' type='text' placeholder='One line about what you sell' value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} /></div>
-                <div className='ob-field'><label className='ob-label'>Description</label><textarea className='ob-textarea' placeholder='Tell buyers what makes your store special...' value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+                <div className='ob-field'><label className='ob-label'>Tagline *</label><input className='ob-input' type='text' placeholder='One line about what you sell' value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} /></div>
+                <div className='ob-field'><label className='ob-label'>Description *</label><textarea className='ob-textarea' placeholder='Tell buyers what makes your store special...' value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
                 <div className='ob-field last'><label className='ob-label'>X (Twitter) handle</label><input className='ob-input' type='text' placeholder='@yourhandle' value={form.xHandle} onChange={e => setForm({ ...form, xHandle: e.target.value })} /></div>
               </div>
             </div>
@@ -139,9 +146,10 @@ export default function CreateStore() {
             {gate === 'need' ? (<>
               <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>You need a seller profile to set up a store — it takes a few seconds.</span></div>
               <Link href={'/onboarding?role=seller&next=' + encodeURIComponent('/store/create')} className='v4btn v4btn-amber ob-cta' style={{ textAlign: 'center', display: 'block' }}>{'Create a seller profile →'}</Link>
-            </>) : (
-              <button onClick={handleCreate} disabled={loading || gate === 'checking'} className='v4btn v4btn-amber ob-cta'>{'Deploy store on Arc · $'}{FEE}{' USDC →'}</button>
-            )}
+            </>) : (<>
+              {!complete && <div className='co-escrow' style={{ background: 'var(--v4-aSoft2)' }}><span className='co-dot' /><span>Add a banner, name, tagline and description to publish your store.</span></div>}
+              <button onClick={handleCreate} disabled={loading || gate === 'checking' || !complete} className='v4btn v4btn-amber ob-cta'>{'Deploy store on Arc · $'}{FEE}{' USDC →'}</button>
+            </>)}
             <div style={{ textAlign: 'center' }}><Link href='/profile' className='ob-backlink'>← Back to profile</Link></div>
           </>
         )}

@@ -3,7 +3,8 @@ import Nav from '../Nav';
 import Link from 'next/link';
 import { useVendraWallet } from '../lib/useVendraWallet';
 import { useState, useEffect } from 'react';
-import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, deleteStore, getStores } from '../lib/supabase';
+import { getAllProfiles, getOrdersByBuyer, getOrdersBySeller, getStoreByWallet, getStores } from '../lib/supabase';
+import { deleteAccount, deleteStoreCascade } from '../lib/account';
 import { useRouter } from 'next/navigation';
 
 export default function Profile() {
@@ -19,6 +20,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -34,8 +38,23 @@ export default function Profile() {
 
   const handleDeleteStore = async () => {
     if (!store) return; setDeleting(true);
-    try { await deleteStore(store.id); setStore(null); setShowDelete(false); }
+    try { await deleteStoreCascade(store.id); setStore(null); setShowDelete(false); }
     catch (e) { console.error(e); } finally { setDeleting(false); }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!address) return; setDeletingAccount(true);
+    try {
+      await deleteAccount(address, view);
+      const all = await getAllProfiles(address);
+      const sp = all.find((p:any) => p.role === 'seller') || null;
+      const bp = all.find((p:any) => p.role === 'buyer') || null;
+      setSellerProfile(sp); setBuyerProfile(bp);
+      setShowDeleteAccount(false); setConfirmText('');
+      if (!sp && !bp) { router.push('/'); return; }
+      if (view === 'seller') setStore(null);
+      setView(sp ? 'seller' : 'buyer');
+    } catch (e) { console.error(e); } finally { setDeletingAccount(false); }
   };
 
   const isSeller = !!sellerProfile, isBuyer = !!buyerProfile;
@@ -59,6 +78,19 @@ export default function Profile() {
     );
   };
 
+  const DangerZone = ({ role }: { role: 'seller'|'buyer' }) => (
+    <>
+      <div className='eyebrow' style={{ margin: '34px 0 12px', color: '#B91C1C' }}>Danger zone</div>
+      <div className='pf-card' style={{ padding: 22, border: '1px solid rgba(185,28,28,.3)' }}>
+        <div style={{ fontWeight: 700, color: 'var(--v4-ink,#1A1206)' }}>Delete {role} account</div>
+        <div className='lede' style={{ fontSize: 14, color: 'var(--v4-tx60,#6B6256)', margin: '6px 0 14px' }}>
+          Permanently removes your {role} profile{role === 'seller' ? ', your store, its products' : ', your order history'} and all related uploads. This can&apos;t be undone. Funds locked in on-chain escrow are not affected.
+        </div>
+        <button onClick={() => { setConfirmText(''); setShowDeleteAccount(true); }} className='pf-del'>Delete {role} account</button>
+      </div>
+    </>
+  );
+
   if (loading) return <main className='v4home' style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Nav theme='v4' /><div className='v4spinner' /></main>;
 
   if (!isSeller && !isBuyer) return (
@@ -75,6 +107,8 @@ export default function Profile() {
     <main className='v4home' style={{ minHeight: '100vh' }}>
       <Nav theme='v4' />
       {showDelete && <div className='pf-modal-bg'><div className='pf-modal'><div className='pf-modal-title'>Delete store?</div><div className='pf-modal-body'>This will permanently delete <strong style={{ color: 'var(--v4-ink)' }}>{store?.name}</strong> and all its products. This cannot be undone.</div><div style={{ display: 'flex', gap: 12 }}><button onClick={handleDeleteStore} disabled={deleting} className='pf-del-solid'>{deleting ? 'Deleting…' : 'Yes, delete'}</button><button onClick={() => setShowDelete(false)} className='v4btn v4btn-ghost'>Cancel</button></div></div></div>}
+
+      {showDeleteAccount && <div className='pf-modal-bg'><div className='pf-modal'><div className='pf-modal-title'>Delete {view} account?</div><div className='pf-modal-body'>This permanently deletes your <strong style={{ color: 'var(--v4-ink)' }}>{view}</strong> profile{view === 'seller' ? ', your store and all its products,' : ' and your order history,'} plus all related Vendra data and uploads. This cannot be undone. Funds locked in on-chain escrow are not affected and still settle normally.<div style={{ marginTop: 14, marginBottom: 6 }}>Type <strong style={{ color: 'var(--v4-ink)' }}>DELETE</strong> to confirm:</div><input className='ob-input' value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder='DELETE' autoFocus /></div><div style={{ display: 'flex', gap: 12 }}><button onClick={handleDeleteAccount} disabled={deletingAccount || confirmText !== 'DELETE'} className='pf-del-solid'>{deletingAccount ? 'Deleting…' : 'Delete account'}</button><button onClick={() => { setShowDeleteAccount(false); setConfirmText(''); }} className='v4btn v4btn-ghost'>Cancel</button></div></div></div>}
 
       <div className='pf-hero'>
         <div className='pf-hero-in'>
@@ -146,6 +180,7 @@ export default function Profile() {
               <div key={o.id} className='pf-order'><Thumb o={o} /><div style={{ flex: 1, minWidth: 0 }}><div className='pf-order-name'>{o.product_name}</div><div className='pf-order-meta'>{new Date(o.created_at).toLocaleDateString()}{o.tx_hash ? ' · ' + o.tx_hash.slice(0,14) + '...' : ''}</div></div><div className='pf-order-amt'>${Number(o.amount).toFixed(2)}</div></div>
             ))}
           </div>
+          <DangerZone role='seller' />
         </div>
       )}
 
@@ -164,6 +199,7 @@ export default function Profile() {
             ))}
           </div>
           <Link href='/marketplace' className='v4btn v4btn-amber'>Browse marketplace →</Link>
+          <DangerZone role='buyer' />
         </div>
       )}
 
