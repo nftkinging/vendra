@@ -44,3 +44,8 @@ next-env.d.ts
 .env
 
 *bak
+
+SUBMISSION.md
+/fix_*.js
+/add_*.js
+/patch_*.js
