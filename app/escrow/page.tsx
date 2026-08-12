@@ -3,7 +3,6 @@ import Nav from '../Nav';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { usePublicClient, useWriteContract } from 'wagmi';
-import { formatUnits } from 'viem';
 import { useVendraWallet } from '../lib/useVendraWallet';
 import { ESCROW_ADDRESS, escrowAbi } from '../lib/escrow';
 
@@ -12,7 +11,7 @@ const STATE_COLOR: Record<number, string> = { 1: '#B47E0E', 2: '#2563EB', 3: '#1
 const SHIP_DEADLINE = 5 * 24 * 60 * 60;
 const CONFIRM_WINDOW = 7 * 24 * 60 * 60;
 
-type Ord = { id: number; buyer: string; seller: string; amount: bigint; fundedAt: number; shippedAt: number; state: number };
+type Ord = { id: number; buyer: string; seller: string; amount: string; fundedAt: number; shippedAt: number; state: number };
 
 export default function EscrowOrders() {
   const { address, isCircle, circle, ready } = useVendraWallet();
@@ -23,29 +22,22 @@ export default function EscrowOrders() {
   const [busy, setBusy] = useState<number | null>(null);
   const [err, setErr] = useState('');
 
-  const load = useCallback(async () => {
-    if (!publicClient || !address) { setLoading(false); return; }
+  const load = useCallback(async (fresh?: boolean) => {
+    if (!address) { setLoading(false); return; }
     setLoading(true); setErr('');
     try {
-      const nextIdBig = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'nextId' }) as bigint;
-      const nextId = Number(nextIdBig);
-      const nextNum = Number(nextId);
-      const startNum = nextNum > 100 ? nextNum - 100 : 1;
-      const mine: Ord[] = [];
-      for (let i = startNum; i <= nextNum; i++) {
-        try {
-          const o = await publicClient.readContract({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: 'getOrder', args: [BigInt(i)] }) as any;
-          if (Number(o.state) === 0) continue; // empty / not-yet-assigned id
-          const buyer = String(o.buyer); const seller = String(o.seller);
-          if (buyer.toLowerCase() === address.toLowerCase() || seller.toLowerCase() === address.toLowerCase()) {
-            mine.push({ id: i, buyer, seller, amount: o.amount as bigint, fundedAt: Number(o.fundedAt), shippedAt: Number(o.shippedAt), state: Number(o.state) });
-          }
-        } catch (e) { /* skip unreadable id */ }
-      }
-      setOrders(mine.reverse());
-    } catch (e: any) { setErr(e?.shortMessage || e?.message || 'Could not load orders'); }
+      // One request to the server, which does the on-chain lookup (via event
+      // logs) and caches it — so the browser no longer floods Arc's RPC.
+      const res = await fetch('/api/arc/escrow-orders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, fresh: !!fresh }),
+      });
+      const data = await res.json();
+      if (data.error && !(data.orders && data.orders.length)) setErr(data.error);
+      setOrders((data.orders || []) as Ord[]);
+    } catch (e: any) { setErr(e?.message || 'Could not load orders'); }
     setLoading(false);
-  }, [publicClient, address]);
+  }, [address]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
@@ -63,7 +55,7 @@ export default function EscrowOrders() {
         const hash = await writeContractAsync({ address: ESCROW_ADDRESS, abi: escrowAbi, functionName: fn, args: [BigInt(id)] });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
-      await load();
+      await load(true);
     } catch (e: any) { setErr(e?.shortMessage || e?.message || 'Transaction failed'); }
     setBusy(null);
   };
@@ -98,7 +90,7 @@ export default function EscrowOrders() {
                   <span style={{ fontWeight: 600, color: 'var(--v4-ink, #1A1206)' }}>Order #{o.id}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: STATE_COLOR[o.state] || '#6B7280' }}>{STATE[o.state] || 'Unknown'}</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--v4-ink, #1A1206)' }}>{formatUnits(o.amount, 6)} <span style={{ fontSize: 13, color: 'var(--v4-tx60, #6B6450)' }}>USDC</span></div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--v4-ink, #1A1206)' }}>{o.amount} <span style={{ fontSize: 13, color: 'var(--v4-tx60, #6B6450)' }}>USDC</span></div>
                 <div style={{ fontSize: 13, color: 'var(--v4-tx60, #6B6450)', margin: '6px 0 14px' }}>
                   {isBuyer ? 'You are the buyer' : isSeller ? 'You are the seller' : ''} · {isBuyer ? 'seller' : 'buyer'} {cp.slice(0, 6)}…{cp.slice(-4)}
                 </div>

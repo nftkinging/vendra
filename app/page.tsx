@@ -40,8 +40,14 @@ export default function Home() {
   useEffect(() => {
     getStores().then((stores:any[]) => {
       const feat:any[] = [];
+      // Only surface complete, real storefronts: a store needs a banner and
+      // details, and the product it features must have an image. Also skips
+      // known bot-spam name patterns.
+      const isBot = (n?: string) => /^\s*botstore/i.test(n || '');
+      const complete = (s:any) => !!(s && s.banner_url && s.name && s.tagline && !isBot(s.name));
       for (const s of (stores || [])) {
-        const pr = (s.products || [])[0];
+        if (!complete(s)) continue;
+        const pr = (s.products || []).find((p:any) => p && p.image_url);
         if (pr) feat.push({ key: s.slug + '-' + pr.id, href: '/store/' + s.slug + '/' + pr.id, cat: s.category || 'Other', v: true, image: pr.image_url || '', name: pr.name, seller: s.name, price: pr.price, g: 'linear-gradient(150deg,#2c2c34,#16161a)', buy: 'View' });
         if (feat.length >= 8) break;
       }

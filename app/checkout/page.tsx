@@ -23,7 +23,7 @@ function CheckoutContent() {
   const price = Number(params.get('price') || 0);
   const qty = Math.max(1, Number(params.get('qty') || 1));
   const total = price * qty;
-  const seller = (params.get('seller') || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
+  const seller = (params.get('seller') || '0xb60de53f5244fc0d0a081a2cd2d3bed41da20b31') as `0x${string}`;
   const [step, setStep] = useState<'review'|'confirm'|'paying'|'success'|'error'|'nofunds'>('review');
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');

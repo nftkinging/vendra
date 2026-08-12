@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 const CATS = [{ icon: '👗', name: 'Fashion' }, { icon: '💾', name: 'Digital' }, { icon: '🎨', name: 'Art' }, { icon: '🛠', name: 'Services' }, { icon: '🍱', name: 'Food' }, { icon: '📱', name: 'Tech' }, { icon: '🎵', name: 'Music' }, { icon: '✨', name: 'Other' }];
 const FEE = 0.5;
-const FEE_WALLET = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as `0x${string}`;
+const FEE_WALLET = '0xb60de53f5244fc0d0a081a2cd2d3bed41da20b31' as `0x${string}`;
 
 export default function CreateStore() {
   const { address, isCircle, circle, ready } = useVendraWallet();
